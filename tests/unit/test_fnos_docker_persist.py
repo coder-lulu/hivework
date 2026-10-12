@@ -29,8 +29,11 @@ def _pyproject_version() -> str:
 @pytest.mark.parametrize("manifest", [FNOS_DOCKER / "manifest", FNOS_NATIVE / "manifest"])
 def test_fnos_manifest_maintainer_and_tags(manifest: Path) -> None:
     text = manifest.read_text(encoding="utf-8")
-    assert "maintainer=TencentCloud\n" in text
-    assert "maintainer=TencentCloud OrcaKit" not in text
+    assert "maintainer=HiveWork\n" in text
+    assert "display_name=蜂巢智工（HiveWork）\n" in text
+    assert "maintainer_url=https://github.com/coder-lulu/hivework\n" in text
+    appname = "octop" if manifest.parent == FNOS_DOCKER else "octop-native"
+    assert f"appname={appname}\n" in text
     assert "tags=AI,Practical Efficiency" in text
 
 
@@ -59,8 +62,12 @@ def test_fnos_docker_compose_uses_trim_data_share_paths() -> None:
     assert "users_loaded" in text
     assert "pull_policy: missing" in text
     assert "pull_policy: always" not in text
-    assert "ghcr.io/tencentcloud/octop:latest" not in text
-    assert f"ghcr.io/tencentcloud/octop:{_pyproject_version()}" in text
+    # Source template is deliberately unreleased; packaging requires an explicit
+    # reviewed FPK_IMAGE_TAG and must never substitute the upstream image.
+    assert "image: ghcr.io/coder-lulu/hivework:unreleased" in text
+    assert "ghcr.io/tencentcloud/octop" not in text
+    build_script = (REPO / "scripts/build-fpk.sh").read_text(encoding="utf-8")
+    assert "HiveWork Docker FPK requires FPK_IMAGE_TAG" in build_script
     assert "env_file:" not in text
     volume_lines = [
         line

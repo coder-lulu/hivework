@@ -1,0 +1,220 @@
+{
+  "app": {
+    "pageTitle": "HiveWork - An intelligent partner that understands you, helps you, and grows with you"
+  },
+  "common": {
+    "askOctopHint": "If installation fails, copy the error details below and send them to HiveWork for help."
+  },
+  "apiErrors": {
+    "BACKUP_SCHEMA_INCOMPATIBLE": "This backup uses database schema version {{archive_schema_version}}, which cannot be restored by this HiveWork version (maximum supported: {{runtime_schema_version}}).",
+    "CONNECTOR_OAUTH_HTTPS_REQUIRED": "HiveWork is currently being accessed over public HTTP, but MCP OAuth callbacks require HTTPS. Use HTTPS, or access HiveWork locally through localhost or 127.0.0.1.",
+    "BRIDGE_AUTH_FAILED": "Peer HiveWork rejected the credentials. Check the address, username, and password — or use Probe to verify the account first.",
+    "BRIDGE_PEER_UNREACHABLE": "Could not reach the peer HiveWork instance. Confirm the URL is reachable, credentials are correct, and the peer has cloud collab support (needs /api/bridge/ws). If the peer is behind NAT, initiate the link from the side that can reach the other.",
+    "BRIDGE_REMOTE_UNSUPPORTED": "This action is not available on the peer expert. Manage it on the peer HiveWork.",
+    "BRIDGE_SELF_CONNECT": "Cannot add this HiveWork instance as a peer of itself.",
+    "SSO_IDENTITY_TAKEN": "This login is already linked to another HiveWork account.",
+    "LDAP_USER_NOT_PROVISIONED": "This directory account has no HiveWork account yet. Ask an administrator to create one or enable automatic provisioning.",
+    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "Allowed storage root cannot be set while HiveWork is running in a container.",
+    "LOCAL_DOWNLOAD_UNAVAILABLE": "Saving to the host Downloads folder is only available when HiveWork is opened on this computer."
+  },
+  "setupWizard": {
+    "subtitle": "Welcome to HiveWork",
+    "migrate": {
+      "desc": "An OpenClaw configuration was detected. You can migrate model config, channel config, workspace files, and skills to HiveWork in one click.",
+      "channelMigrationWarning": "After migration, the same channel will be connected to both OpenClaw and HiveWork agents simultaneously. Incoming messages may be answered by both agents, causing duplicate or conflicting replies. Only enable this option if OpenClaw is already stopped or you truly need dual-agent routing."
+    },
+    "browser": {
+      "desc": "HiveWork uses browser automation to help you browse the web, fill out forms, take screenshots, extract information, and complete complex online tasks — all hands-free. A Chromium-based browser is required for these capabilities.",
+      "installFailedHint": "Automatic installation failed. Retry, run the command below, or copy the error details and send them to HiveWork. If downloads are slow, set PLAYWRIGHT_DOWNLOAD_HOST to a mirror URL and retry."
+    }
+  },
+  "experts": {
+    "marketBackendMissing": "The backend has not loaded the Expert Market API yet. Restart HiveWork or confirm it is running this updated code.",
+    "rootDirProbe": {
+      "permission_denied": "The HiveWork service does not have full read, write, and execute access to this directory."
+    }
+  },
+  "chat": {
+    "remoteExpert": {
+      "manageToast": "This is a peer expert. Manage skills, models, knowledge bases, and related settings on the peer HiveWork.",
+      "editBanner": "You are editing a peer expert. Changes are saved on the peer HiveWork.",
+      "editPlugins": "You can toggle plugins already installed on the peer. Install, uninstall, and marketplace stay on the peer HiveWork.",
+      "peerOnlyAcp": "ACP runners listed here belong to this HiveWork. Pick a local expert to toggle its ACP tool, or open the peer expert’s Tools tab to manage the peer."
+    }
+  },
+  "skills": {
+    "octop-assistant": "HiveWork Assistant",
+    "octop_assistant": "HiveWork Assistant"
+  },
+  "cronJobs": {
+    "form": {
+      "sessionKeyTooltip": "HiveWork session_key — controls which channel/session receives cron output."
+    }
+  },
+  "channels": {
+    "dingtalkQrIntro3": "HiveWork creates and enables the DingTalk channel automatically"
+  },
+  "tls": {
+    "subtitle": "Issue a free TLS certificate when this server listens on 0.0.0.0:80. After issuance, HiveWork runs HTTPS on 443 and keeps HTTP on 80 for ACME renewals.",
+    "restartRequired": "Certificate installed. Restart HiveWork to enable HTTPS on 443 (HTTP 80 stays open for renewals)."
+  },
+  "advancedSettings": {
+    "bridge": {
+      "description": "Link this HiveWork to another instance. Browse peer experts and chat across instances; conversation history stays on the expert’s side.",
+      "emptyDesc": "Add a peer HiveWork address with username and password to start.",
+      "directionHint": "Initiate from the side that can reach the other. Typically a LAN or laptop connects out to a public/cloud HiveWork. Probe only checks the account; the handshake must also succeed before the row is saved.",
+      "probeFailed": "Could not probe the peer HiveWork",
+      "peerUrlRequired": "Enter the peer HiveWork address"
+    },
+    "search": {
+      "sourceBuiltinDesc": "When no third-party search provider is configured, HiveWork still provides its built-in search service. It requires no API key, but its stability and availability are not guaranteed. It switches automatically once a third-party provider is configured."
+    },
+    "update": {
+      "restartHint": "Please restart HiveWork for the update to take effect.",
+      "guide": {
+        "restart": {
+          "body": "The new package only takes effect after the process restarts. Use the command that matches how you launched HiveWork:"
+        }
+      },
+      "description": "Check for the latest release and upgrade in place; use the guide on the right for other install methods."
+    }
+  },
+  "proactiveConfig": {
+    "episodeBannerText": "HiveWork picks a good moment from your episodes to send a caring message. See which entries are referenced in \"Episodes\".",
+    "enabledTip": "When enabled, AI will regularly review your stored memories and proactively message you whenever it thinks something is worth bringing up.",
+    "everyTip": "How often AI reviews your memories to see if there's anything worth reminding you about. Format: 30m, 1h, 2h30m",
+    "description": "Let AI periodically review your memories and reach out at the right moment — like a thoughtful assistant who always has your back."
+  },
+  "memory": {
+    "overview": {
+      "profileSubtitle": "A structured summary of what HiveWork currently understands about you — high-value conclusions only, not the full memory store."
+    },
+    "edit": {
+      "description": "After saving, HiveWork will use the new text. The previous version stays in the change history."
+    },
+    "deprecate": {
+      "description": "HiveWork will no longer use this memory once it is deprecated. If it was recorded incorrectly, describe the correct content as the deprecation reason.",
+      "success": "Deprecated — HiveWork will no longer use this memory"
+    },
+    "episodes": {
+      "disclaimer": "This diary keeps the emotions and little stories from your time with HiveWork. It is not quoted in regular chats — it only helps HiveWork care for you better and feeds the weekly / monthly recaps."
+    },
+    "migrate": {
+      "doctorDesc": "Run a health check on this HiveWork memory store: schema, indexes, foreign-key integrity and more.",
+      "exportDesc": "Pack all memories of this HiveWork into a .hmpkg file and download it. You can import the file on another host (openclaw / hermes) to keep using them."
+    },
+    "terminal": {
+      "emptyAboutMe": "HiveWork is still getting to know you — chat a bit more and it will fill in",
+      "toldMeDesc": "Key details recently noted by HiveWork"
+    },
+    "description": "View and manage agent conversation history and daily logs.",
+    "noAgentSelected": "Pick an agent in the top switcher first",
+    "longTermMemoryDesc": "Core knowledge, lessons learned, and important configurations accumulated by the agent.",
+    "conversationRole": {
+      "assistant": "Assistant"
+    },
+    "conversationHistoryDesc": "Browse full conversation history by thread.",
+    "noConversations": "No conversations yet"
+  },
+  "remoteBrowser": {
+    "installFailedHint": "Automatic installation failed. Copy the error details below and send them to HiveWork, or set PLAYWRIGHT_DOWNLOAD_HOST to a mirror URL and retry.",
+    "notInstalledHint": "HiveWork needs a browser to open pages, fill forms, and take screenshots for you. Click below to install one automatically.",
+    "uninstallConfirm": "This will close any open browser windows in HiveWork and remove the browser HiveWork installed. Chrome and other browsers already on your computer are not affected.",
+    "envReady": "HiveWork can open pages, fill forms, and take screenshots for you."
+  },
+  "remoteDesktop": {
+    "subtitle": "Control the HiveWork host operating system desktop",
+    "installFailedHint": "Installation did not complete. Copy the error details below and send them to HiveWork, then retry.",
+    "macPermissionsDesc": "In System Settings → Privacy & Security, grant {{permissions}} to the terminal (or Cursor / Terminal) running HiveWork, restart HiveWork, then click Recheck.",
+    "macPermStep2": "Enable the app or terminal running HiveWork under {{permissions}}",
+    "macPermStep3": "Restart HiveWork (octop run), then click Recheck on this page",
+    "connectDisabledPerms": "Grant Screen Recording and Accessibility in System Settings, then restart HiveWork"
+  },
+  "wizard": {
+    "database": {
+      "hint": "Choose where HiveWork stores control-plane data (users, agents, channels). The default SQLite file works for most installs.",
+      "sqlitePathHint": "Default local database file under the HiveWork home directory."
+    },
+    "password": {
+      "hint": "On first start, HiveWork prints a one-time bootstrap password in the server terminal and writes it to the file below.",
+      "wherePath": "On the server, open {{path}} or check the yellow banner printed when HiveWork starts.",
+      "whereDefault": "On the server, open ~/hivework-login.txt or check the yellow banner printed when HiveWork starts."
+    }
+  },
+  "storage": {
+    "dockerEnv": {
+      "autoDescReady": "Passwordless sudo is available — HiveWork can try installing Docker via the package manager.",
+      "autoDescUnavailable": "Auto-install may be unavailable (non-Linux or no passwordless sudo). You can still click Try install; on failure use manual or HiveWork below.",
+      "sectionOctop": "3. Install via HiveWork",
+      "octopDesc": "Copy the prompt below into a HiveWork chat and let the agent help install and verify Docker.",
+      "copiedPrompt": "Prompt copied — paste it into a HiveWork chat"
+    }
+  },
+  "login": {
+    "forgotPasswordHelp": "Ask an administrator to reset it under Users. If you manage this host, run the command below on the machine where HiveWork is installed, using the same OS account that runs the service.",
+    "oidcError": {
+      "identity_taken": "This login is already linked to another HiveWork account."
+    }
+  },
+  "invite": {
+    "subtitle": "Enter your invite code, create an account, then start using HiveWork."
+  },
+  "adminSso": {
+    "wecomRedirectDocs": "In WeCom → App → Web: set 授权回调域 to the host below (e.g. localhost or octop.example.com). Do not paste http:// or /api/…. HiveWork still redirects to the full callback URL.",
+    "callbackFullUriHint": "HiveWork’s full redirect URI (for reference):",
+    "ldap": {
+      "sectionServerHint": "Where HiveWork connects to authenticate users.",
+      "sectionBindHint": "The account HiveWork uses to search the directory.",
+      "sectionSearchHint": "How HiveWork finds the directory account behind the username typed on the sign-in page.",
+      "sectionAttributesHint": "Directory attributes mapped onto the HiveWork account.",
+      "autoProvisionHint": "When off, only existing HiveWork users can sign in through the directory.",
+      "adminGroupsOnceBody": "Adding a user to an admin group later does NOT promote them, and removing them does not demote them. Change a role in HiveWork's user list instead.",
+      "warning": {
+        "no_admin_groups": "No admin group is configured, so no directory user can become a HiveWork admin at first sign-in.",
+        "auto_provision_open": "Automatic account creation is on with no sign-in allow-list: every account the filter matches gets a HiveWork account.",
+        "identity_key_is_dn": "No identity key attribute is set while automatic account creation is on, so new accounts are keyed on their entry DN — renaming or moving a user in the directory creates a second HiveWork account."
+      },
+      "adminGroupsHint": "Members of these groups get the admin role — only when an account is first created. Changing a directory group later never re-templates an existing account. Prefer full DNs: a bare CN also matches a same-named group in any other OU."
+    }
+  },
+  "connectors": {
+    "customMcp": {
+      "probeOnSaveHint": "HiveWork will request your MCP URL to verify connectivity. If sign-in is required, we will guide you through OAuth."
+    },
+    "cliMissingHint": "CLI is not installed on the host. Click Install CLI, or run the command below on the HiveWork host.",
+    "weknoraNotFound": "WeKnora not found at 127.0.0.1:8080 on the HiveWork host"
+  },
+  "plugins": {
+    "guideImportBody": "Host the .zip where HiveWork can download it over HTTP(S). Prefer a raw file URL. Configure each agent from Personalization → Plugins. Local demos: octop plugin install ./plugins/demo-toolkit --force"
+  },
+  "pageShell": {
+    "bridge": {
+      "subtitle": "Connect another HiveWork instance, browse its experts, and chat across instances"
+    },
+    "desktop": {
+      "subtitle": "View and control the HiveWork host desktop, and complete tasks remotely"
+    }
+  },
+  "errors": {
+    "offlineTitle": "Cannot reach the HiveWork server"
+  },
+  "pwa": {
+    "installAsAppDesc": "Install HiveWork as an app for one-tap access anytime.",
+    "desktopStep2": "Or open the browser menu and choose \"{{action}} HiveWork\"",
+    "desktopHint": "Browsers only offer installation over HTTPS; if you access HiveWork via a LAN IP, HTTPS is required."
+  },
+  "brand": {
+    "name": "HiveWork",
+    "mascot": "HiveWork mascot",
+    "candidateTitle": "HiveWork suggestions",
+    "candidateHint": "HiveWork extracted these drafts from conversations. They are awaiting system review.",
+    "updateTitle": "HiveWork updates",
+    "updateDescription": "Update through the HiveWork deployment channel. Official Octop packages do not contain this edition.",
+    "updateSource": "For source deployments, follow the HiveWork installation and upgrade guide. Back up data before upgrading and restart the service afterwards.",
+    "updateGuide": "Installation and upgrade guide",
+    "releases": "HiveWork releases"
+  },
+  "acp": {
+    "intro_opencode": "Open-source AI coding agent; connect via stdio ACP."
+  }
+}

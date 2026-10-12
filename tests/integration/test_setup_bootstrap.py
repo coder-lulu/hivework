@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from octop.infra.server import OctopServer
 from octop.infra.setup.password_file import read_password
 from tests.support.app import write_octop_config
@@ -17,6 +19,7 @@ async def test_setup_status_flips_after_bootstrap(patched_app_client: Any) -> No
     r = await c.get("/api/setup/status")
     assert r.status_code == 200
     assert r.json()["setup_required"] is True
+    assert Path(r.json()["wizard_password_path"]) == home.parent / "hivework-login.txt"
 
     r = await bootstrap_admin(c, home)
     assert r.status_code == 201
@@ -79,11 +82,16 @@ async def test_double_bootstrap_returns_410(patched_app_client: Any) -> None:
     assert r.json()["error"]["code"] == "SETUP_REQUIRED"
 
 
-async def test_start_writes_wizard_password_when_no_users(tmp_octop_home: Path) -> None:
+async def test_start_writes_wizard_password_when_no_users(
+    tmp_octop_home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     srv = OctopServer(home=tmp_octop_home)
     await srv.start()
     try:
-        assert (tmp_octop_home.parent / "octop-login.txt").exists()
+        assert (tmp_octop_home.parent / "hivework-login.txt").exists()
+        banner = capsys.readouterr().out
+        assert "HiveWork first-run wizard password" in banner
+        assert "File: ~/hivework-login.txt" in banner
     finally:
         await srv.stop()
 
@@ -93,7 +101,7 @@ async def test_start_skips_wizard_password_when_disabled(tmp_octop_home: Path) -
     srv = OctopServer(home=tmp_octop_home)
     await srv.start()
     try:
-        assert not (tmp_octop_home / "octop-login.txt").exists()
+        assert not (tmp_octop_home.parent / "hivework-login.txt").exists()
     finally:
         await srv.stop()
 

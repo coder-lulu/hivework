@@ -43,3 +43,16 @@ async def test_update_settings_stable_only_roundtrip(env_admin_client: Any) -> N
     r = await c.patch("/api/update/settings", json={"stable_only": True}, headers=auth)
     assert r.status_code == 200
     assert r.json()["stable_only"] is True
+
+
+async def test_brand_update_refused_without_creating_install_task(env_admin_client: Any) -> None:
+    c, auth = env_admin_client
+    response = await c.post(
+        "/api/update/upgrade", headers={**auth, "Accept-Language": "en"}, json={}
+    )
+    assert response.status_code == 403
+    error = response.json()["error"]
+    assert error["code"] == "UPDATE_BRAND_MANAGED"
+    assert error["details"]["repository_url"] == "https://github.com/coder-lulu/hivework"
+    assert error["details"]["brand"] in error["message"]
+    assert "{brand}" not in error["message"]

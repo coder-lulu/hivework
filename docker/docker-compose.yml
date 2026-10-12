@@ -1,5 +1,5 @@
 # =============================================================================
-# Octop — Docker Compose
+# HiveWork — Docker Compose
 #
 # 用法（在仓库根目录执行）:
 #   docker compose -f docker/docker-compose.yml up -d
@@ -25,7 +25,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: octop:latest
+    image: hivework:local
     container_name: octop
     restart: unless-stopped
     ports:

@@ -12,7 +12,7 @@ import (
 // the icon must carry its own padding and be a monochrome template to sit at
 // the same visual weight as system items.
 //
-//go:embed assets/tray-icon-template.png
+//go:embed assets/hivework-tray-template.png
 var trayTemplateIcon []byte
 
 func applyTrayIcon(tray *application.SystemTray) {

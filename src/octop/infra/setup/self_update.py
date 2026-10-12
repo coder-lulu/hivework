@@ -21,6 +21,7 @@ from email.parser import BytesParser
 from pathlib import Path
 from typing import Any
 
+from octop.branding import brand_name, get_profile
 from octop.i18n import lookup, tr
 from octop.infra.errors import ErrorCode, OctopError
 from octop.infra.utils.locale import DEFAULT_LOCALE
@@ -968,6 +969,15 @@ def _run_fpk_upgrade(
     return _all_mirrors_failed(mirror_errors)
 
 
+def official_self_update_allowed() -> bool:
+    return bool(get_profile()["allow_official_self_update"])
+
+
+def brand_update_error(locale: str = DEFAULT_LOCALE) -> OctopError:
+    details = {"brand": brand_name(locale), "repository_url": get_profile()["repository_url"]}
+    return OctopError.localized(ErrorCode.UPDATE_BRAND_MANAGED, locale, details=details, **details)
+
+
 def run_upgrade(
     *,
     verbose: bool = False,
@@ -975,6 +985,8 @@ def run_upgrade(
     version: str | None = None,
     locale: str = DEFAULT_LOCALE,
 ) -> UpgradeResult:
+    if not official_self_update_allowed():
+        return UpgradeResult(success=False, error=brand_update_error(locale).message)
     try:
         validate_upgrade_target(version, get_local_version())
     except OctopError as exc:

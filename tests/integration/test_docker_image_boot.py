@@ -182,7 +182,7 @@ def test_docker_valid_password_creates_admin_and_serves(docker_boot: Any) -> Non
     cred = _exec_text(name, "/data/.octop/credential.txt")
     assert "Octop Login Credential" in cred
     assert f"Password: {password}" in cred
-    wizard = _run(["docker", "exec", name, "test", "-f", "/data/.octop/octop-login.txt"])
+    wizard = _run(["docker", "exec", name, "test", "-f", "/data/.octop/hivework-login.txt"])
     assert wizard.returncode != 0
 
 
@@ -206,7 +206,7 @@ def test_docker_invalid_password_starts_setup_wizard(docker_boot: Any, password:
     assert login.get("setup_required") is True
     hint = _exec_text(name, "/data/.octop/credential.txt")
     assert "Setup Required" in hint
-    wizard = _exec_text(name, "/data/.octop/octop-login.txt").strip()
+    wizard = _exec_text(name, "/data/.octop/hivework-login.txt").strip()
     assert wizard
     logs = _run(["docker", "logs", name], timeout=20).stdout
     assert "未通过密码策略" in logs

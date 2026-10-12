@@ -9,6 +9,7 @@ import { storeUiLocale, type UiLocale } from "../../utils/locale";
 import { authApi } from "../../api/modules/auth";
 import { preferencesApi } from "../../api/modules/preferences";
 import BootOfflinePanel from "../../components/BootOfflinePanel";
+import DesktopServerSettings from "../../components/DesktopServerSettings";
 import { useTheme } from "../../context/ThemeContext";
 import { isNetworkFetchError } from "../../utils/networkError";
 import DatabaseStep from "./steps/DatabaseStep";
@@ -262,7 +263,7 @@ export default function SetupPage() {
                     ? "/logo_horizontal_white.png"
                     : "/logo_horizontal_dark.png"
                 }
-                alt="Octop"
+                alt={t("brand.name")}
                 className={styles.wizardHeaderLogo}
               />
               <div className={styles.wizardHeaderBrandText}>
@@ -282,6 +283,7 @@ export default function SetupPage() {
               onChange={handleLanguageChange}
             />
           </div>
+          <DesktopServerSettings />
           <Steps
             className={styles.wizardHeaderSteps}
             current={stepIndex}

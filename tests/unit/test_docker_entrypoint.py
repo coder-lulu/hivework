@@ -38,6 +38,37 @@ def _bash(script: str, *, env: dict[str, str] | None = None) -> subprocess.Compl
 
 
 @posix_only
+def test_prepare_tools_uses_data_volume_and_is_idempotent(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    data = tmp_path / "data"
+    script = _source_helpers() + "\noctop_prepare_tools\noctop_prepare_tools\n"
+    result = _bash(script, env={"HOME": str(home), "OCTOP_HOME": str(data)})
+    assert result.returncode == 0, result.stderr
+    for name in ("local", "skillhub"):
+        assert (home / f".{name}").is_symlink()
+        assert (home / f".{name}").resolve() == data / "tools" / name
+    marker = home / ".local" / "installed.txt"
+    marker.write_text("saved", encoding="utf-8")
+    assert (data / "tools" / "local" / "installed.txt").read_text(encoding="utf-8") == "saved"
+
+
+@posix_only
+def test_prepare_tools_preserves_existing_home_tools(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    local = home / ".local"
+    local.mkdir(parents=True)
+    marker = local / "installed.txt"
+    marker.write_text("existing", encoding="utf-8")
+    result = _bash(
+        _source_helpers() + "\noctop_prepare_tools\n",
+        env={"HOME": str(home), "OCTOP_HOME": str(tmp_path / "data")},
+    )
+    assert result.returncode == 0, result.stderr
+    assert not local.is_symlink()
+    assert marker.read_text(encoding="utf-8") == "existing"
+
+
+@posix_only
 def test_entrypoint_common_passwords_match_python() -> None:
     text = ENTRYPOINT.read_text(encoding="utf-8")
     match = re.search(r'^_OCTOP_COMMON_PASSWORDS="([^"]+)"$', text, re.MULTILINE)
@@ -117,7 +148,7 @@ def test_seed_wizard_password_writes_volume_and_home_link(tmp_path: Path) -> Non
         },
     )
     assert result.returncode == 0, result.stderr
-    wizard = octop_home / "octop-login.txt"
+    wizard = octop_home / "hivework-login.txt"
     assert wizard.is_file()
     pw = wizard.read_text(encoding="utf-8").strip()
     assert pw
@@ -177,7 +208,7 @@ def test_first_boot_valid_password_creates_admin(tmp_path: Path, password: str) 
     assert "Octop Login Credential" in cred
     assert f"Password: {password}" in cred
     assert "Username: admin" in cred
-    assert not (octop_home / "octop-login.txt").exists()
+    assert not (octop_home / "hivework-login.txt").exists()
 
 
 @posix_only
@@ -200,7 +231,7 @@ def test_first_boot_invalid_or_missing_password_starts_wizard(
     result, octop_home = _run_first_boot(tmp_path, password=password)
     assert result.returncode == 0, result.stderr + result.stdout
     assert not (octop_home / "init-password.txt").exists()
-    wizard = octop_home / "octop-login.txt"
+    wizard = octop_home / "hivework-login.txt"
     assert wizard.is_file()
     hint = (octop_home / "credential.txt").read_text(encoding="utf-8")
     assert "Setup Required" in hint
@@ -225,7 +256,7 @@ octop_run_init() {
     )
     assert result.returncode == 0, result.stderr + result.stdout
     assert "改为启动设置向导" in result.stdout
-    assert (octop_home / "octop-login.txt").is_file()
+    assert (octop_home / "hivework-login.txt").is_file()
     assert "Setup Required" in (octop_home / "credential.txt").read_text(encoding="utf-8")
 
 
@@ -243,7 +274,7 @@ octop_run_init() {
     )
     assert result.returncode != 0
     assert "不是密码策略问题" in result.stderr
-    assert not (octop_home / "octop-login.txt").exists()
+    assert not (octop_home / "hivework-login.txt").exists()
 
 
 @posix_only

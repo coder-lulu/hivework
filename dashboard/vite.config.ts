@@ -1,3 +1,4 @@
+import { hiveworkBranding } from "./branding/plugin";
 import { webcrypto } from "node:crypto";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
@@ -169,6 +170,7 @@ export default defineConfig(({ mode }) => {
       MOBILE: false,
     },
     plugins: [
+      hiveworkBranding(),
       suppressViteDisconnectReload(),
       react(),
       VitePWA({
@@ -183,6 +185,7 @@ export default defineConfig(({ mode }) => {
         // Include the offline fallback in the SW precache.
         includeAssets: [
           "offline.html",
+          "favico.svg",
           "logo_vertical_dark.svg",
           "logo_vertical_white.svg",
           "logo_horizontal_dark.png",

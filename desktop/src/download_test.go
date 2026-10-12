@@ -600,7 +600,7 @@ func TestWaitHealthTimesOutWithFriendlyMessage(t *testing.T) {
 	}
 }
 
-func writeTestGreenZip(t *testing.T, path, version string) {
+func writeTestGreenZip(t *testing.T, path, version string, record ...string) {
 	t.Helper()
 	f, err := os.Create(path)
 	if err != nil {
@@ -611,6 +611,9 @@ func writeTestGreenZip(t *testing.T, path, version string) {
 		"Octop-test/launch.py",
 		"Octop-test/VERSION.txt",
 		"Octop-test/packages/octop-" + version + ".dist-info/METADATA",
+	}
+	if len(record) > 0 {
+		files = append(files, "Octop-test/packages/octop-"+version+".dist-info/RECORD")
 	}
 	if runtime.GOOS == "windows" {
 		files = append(files, "Octop-test/runtime/python.exe")
@@ -623,7 +626,9 @@ func writeTestGreenZip(t *testing.T, path, version string) {
 	for _, name := range files {
 		header := &zip.FileHeader{Name: name, Method: zip.Store}
 		content := []byte("test executable payload")
-		if strings.HasSuffix(name, "/VERSION.txt") {
+		if strings.HasSuffix(name, "/RECORD") {
+			content = []byte(record[0])
+		} else if strings.HasSuffix(name, "/VERSION.txt") {
 			content = []byte("platform=test\noctop_version=" + version + "\n")
 		} else if strings.HasSuffix(name, "/METADATA") {
 			content = []byte("Name: octop\nVersion: " + version + "\n")

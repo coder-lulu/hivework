@@ -3,11 +3,11 @@
 All desktop-client code lives here. This is **not** `src/octop/infra/desktop`
 (remote desktop streaming).
 
-| Path | Role |
-|------|------|
-| [`portable/`](portable/) | Green zip packaging (was `scripts/green/`) |
-| [`src/`](src/) | Wails v3 shell: load bundled zip, spawn Octop, tray/settings |
-| [`package-release.sh`](package-release.sh) | Native end-to-end portable + Wails release build |
+| Path                                       | Role                                                         |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| [`portable/`](portable/)                   | Green zip packaging (was `scripts/green/`)                   |
+| [`src/`](src/)                             | Wails v3 shell: load bundled zip, spawn Octop, tray/settings |
+| [`package-release.sh`](package-release.sh) | Native end-to-end portable + Wails release build             |
 
 ## Data directory
 
@@ -16,6 +16,16 @@ Same as the Octop CLI/server default:
 - `OCTOP_HOME` → `~/.octop` (or the existing `OCTOP_HOME` env)
 - Green runtime extract → `~/.octop/portable/`
 - Shell prefs → `~/.octop/desktop-settings.json`
+- Saved servers and last selection → `~/.octop/desktop-servers.json`
+
+The desktop login and first-run setup pages include **Server settings**. Add
+multiple HTTP/HTTPS server addresses there, then connect to remember the default
+for later launches. The startup screen and tray settings also open this manager,
+so an unavailable server can be changed. See [the connection guide](../docs/desktop-server-connections.md).
+
+A saved selection takes precedence over `OCTOP_DESKTOP_URL`; explicitly choosing
+the local service returns to the bundled/local runtime. Server accounts continue
+to use each server's own login page.
 
 ## Build green zip
 
@@ -84,7 +94,7 @@ GitHub Release names follow `Octop-<kind>-<os>-<arch>-<version>.<ext>`:
 
 - Desktop GUI: `Octop-desktop-<plat>-<version>.dmg` (macOS; open and drag
   `Octop.app` into Applications), `.exe` (Windows NSIS installer — copies
-  into `Program Files\Octop` and creates Start Menu + desktop shortcuts),
+  into `Program Files\HiveWork` as `HiveWork.exe` and creates HiveWork Start Menu + desktop shortcuts),
   `.tar.gz` (Linux)
 - Green runtime zip: `Octop-portable-<plat>-<version>.zip`
 - PyPI wheels stay `octop-<version>-py3-none-any.whl` (PEP 427)
@@ -98,12 +108,18 @@ Linux also needs GTK4 + WebKitGTK 6 to link. macOS 12+.
 
 ## Icons
 
-| File | Used for | Rule |
-|------|----------|------|
-| `src/build/appicon.png` | Windows `.ico`, Linux | Full-bleed 512x512 artwork |
-| `src/build/appicon-macos.png` | macOS `.icns` | 1024x1024 canvas, artwork 824x824 centred |
-| `src/assets/tray-icon.png` | Tray + app icon on Windows/Linux | Full-bleed |
-| `src/assets/tray-icon-template.png` | macOS menu bar | 88px canvas, 64px black-on-transparent glyph |
+Icons now derive from the user-provided `hivework-logo-assets/` PNG artwork.
+`src/build/appicon.png` uses `icons/app-icon-orange-512.png`; the macOS source
+uses `icons/app-icon-orange-1024.png` with the padding described below.
+Regenerate platform assets from the repository root with
+`uv run python scripts/prepare_platform_branding.py --generate-assets`.
+
+| File                                | Used for                         | Rule                                         |
+| ----------------------------------- | -------------------------------- | -------------------------------------------- |
+| `src/build/appicon.png`             | Windows `.ico`, Linux            | Full-bleed 512x512 artwork                   |
+| `src/build/appicon-macos.png`       | macOS `.icns`                    | 1024x1024 canvas, artwork 824x824 centred    |
+| `src/assets/hivework-tray.png`          | Tray + app icon on Windows/Linux | Full-bleed                                   |
+| `src/assets/hivework-tray-template.png` | macOS menu bar                   | 88px canvas, 64px black-on-transparent glyph |
 
 macOS sizes both surfaces to a fixed box, so the padding has to live in the
 artwork: the Dock follows Apple's 824/1024 icon grid, and Wails scales the menu

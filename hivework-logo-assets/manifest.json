@@ -1,0 +1,292 @@
+{
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "assets": [
+    {
+      "name": "logo-bilingual",
+      "label": "中英文主标志",
+      "file": "png/logo-bilingual.png",
+      "width": 798,
+      "height": 270,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 134960,
+      "nearOpaquePixels": 54689
+    },
+    {
+      "name": "mark-orange",
+      "label": "独立橙色标志",
+      "file": "png/mark-orange.png",
+      "width": 297,
+      "height": 317,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 44201,
+      "nearOpaquePixels": 40999
+    },
+    {
+      "name": "logo-english",
+      "label": "英文横版",
+      "file": "png/logo-english.png",
+      "width": 422,
+      "height": 144,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 41094,
+      "nearOpaquePixels": 11085
+    },
+    {
+      "name": "logo-chinese",
+      "label": "中文横版",
+      "file": "png/logo-chinese.png",
+      "width": 398,
+      "height": 148,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 38488,
+      "nearOpaquePixels": 10524
+    },
+    {
+      "name": "logo-bilingual-reverse",
+      "label": "中英文反白版 · 透明底",
+      "file": "png/logo-bilingual-reverse.png",
+      "width": 406,
+      "height": 154,
+      "transparent": true,
+      "dark": true,
+      "alphaZeroPixels": 34533,
+      "nearOpaquePixels": 11923
+    },
+    {
+      "name": "app-icon-orange",
+      "label": "橙色应用图标",
+      "file": "png/app-icon-orange.png",
+      "width": 227,
+      "height": 227,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 2561,
+      "nearOpaquePixels": 47096
+    },
+    {
+      "name": "app-icon-orange-16",
+      "file": "icons/app-icon-orange-16.png",
+      "width": 16,
+      "height": 16,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-32",
+      "file": "icons/app-icon-orange-32.png",
+      "width": 32,
+      "height": 32,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-48",
+      "file": "icons/app-icon-orange-48.png",
+      "width": 48,
+      "height": 48,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-64",
+      "file": "icons/app-icon-orange-64.png",
+      "width": 64,
+      "height": 64,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-180",
+      "file": "icons/app-icon-orange-180.png",
+      "width": 180,
+      "height": 180,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-192",
+      "file": "icons/app-icon-orange-192.png",
+      "width": 192,
+      "height": 192,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-512",
+      "file": "icons/app-icon-orange-512.png",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-orange-1024",
+      "file": "icons/app-icon-orange-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true,
+      "resizedFrom": [
+        227,
+        227
+      ]
+    },
+    {
+      "name": "app-icon-navy",
+      "label": "深蓝应用图标",
+      "file": "png/app-icon-navy.png",
+      "width": 233,
+      "height": 233,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 3545,
+      "nearOpaquePixels": 49232
+    },
+    {
+      "name": "app-icon-navy-16",
+      "file": "icons/app-icon-navy-16.png",
+      "width": 16,
+      "height": 16,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-32",
+      "file": "icons/app-icon-navy-32.png",
+      "width": 32,
+      "height": 32,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-48",
+      "file": "icons/app-icon-navy-48.png",
+      "width": 48,
+      "height": 48,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-64",
+      "file": "icons/app-icon-navy-64.png",
+      "width": 64,
+      "height": 64,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-180",
+      "file": "icons/app-icon-navy-180.png",
+      "width": 180,
+      "height": 180,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-192",
+      "file": "icons/app-icon-navy-192.png",
+      "width": 192,
+      "height": 192,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-512",
+      "file": "icons/app-icon-navy-512.png",
+      "width": 512,
+      "height": 512,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "app-icon-navy-1024",
+      "file": "icons/app-icon-navy-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true,
+      "resizedFrom": [
+        233,
+        233
+      ]
+    },
+    {
+      "name": "mark-black",
+      "label": "黑色单色标志",
+      "file": "png/mark-black.png",
+      "width": 204,
+      "height": 206,
+      "transparent": true,
+      "dark": false,
+      "alphaZeroPixels": 22528,
+      "nearOpaquePixels": 15452
+    },
+    {
+      "name": "mark-white",
+      "label": "白色单色标志",
+      "file": "png/mark-white.png",
+      "width": 201,
+      "height": 205,
+      "transparent": true,
+      "dark": true,
+      "alphaZeroPixels": 19601,
+      "nearOpaquePixels": 15335
+    },
+    {
+      "name": "logo-bilingual-dark-background",
+      "label": "中英文深蓝背景版",
+      "file": "png/logo-bilingual-dark-background.png",
+      "width": 510,
+      "height": 223,
+      "transparent": false,
+      "dark": true
+    }
+  ]
+}

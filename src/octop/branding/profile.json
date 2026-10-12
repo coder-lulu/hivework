@@ -1,0 +1,16 @@
+{
+  "id": "hivework",
+  "name": {
+    "en": "HiveWork",
+    "zh": "蜂巢智工"
+  },
+  "description": {
+    "en": "Self-hosted AI workspace for people and agents",
+    "zh": "面向多用户与多智能体的自托管智能工作空间"
+  },
+  "repository_url": "https://github.com/coder-lulu/hivework",
+  "upstream_repository_url": "https://github.com/TencentCloud/Octop",
+  "support_url": "https://github.com/coder-lulu/hivework/issues",
+  "allow_official_self_update": false,
+  "default_palette": "tech"
+}

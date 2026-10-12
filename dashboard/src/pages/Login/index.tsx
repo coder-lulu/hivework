@@ -31,6 +31,7 @@ import wecomIcon from "../../assets/channels/wecom.svg";
 import googleIcon from "../../assets/providers/google.svg";
 import CaptchaField, { type CaptchaFieldHandle } from "./CaptchaField";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import DesktopServerSettings from "../../components/DesktopServerSettings";
 import { type PublicCaptchaConfig } from "./captchaAdapters";
 
 function providerLabel(
@@ -273,7 +274,7 @@ export default function LoginPage() {
           src={
             isDark ? "/logo_horizontal_white.png" : "/logo_horizontal_dark.png"
           }
-          alt="Octop"
+          alt={t("brand.name")}
           style={{
             height: 48,
             width: "auto",
@@ -294,6 +295,8 @@ export default function LoginPage() {
         >
           {t("login.title")}
         </h2>
+
+        <DesktopServerSettings />
 
         <Input
           prefix={

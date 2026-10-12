@@ -67,8 +67,8 @@ func TestSplashLoadingCardWrapsProgressAndStatus(t *testing.T) {
 		`class="loading-bar"`,
 		`id="status"`,
 		`.loading-card {`,
-		`border-radius: 14px`,
-		`box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06)`,
+		`border-radius: 16px`,
+		`box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08)`,
 	} {
 		if !strings.Contains(body, needle) {
 			t.Fatalf("splash HTML missing %q", needle)
@@ -139,8 +139,9 @@ func TestSettingsHTMLFitsWithoutScrollbar(t *testing.T) {
 	if !strings.Contains(body, `.glyph`) || !strings.Contains(body, `translateY(-0.5px)`) {
 		t.Fatal("traffic-light glyphs must be optically centered in the lights")
 	}
-	if !strings.Contains(body, `html[data-mode="settings"] .window-controls [data-action="minimise"]`) ||
-		!strings.Contains(body, `html[data-mode="settings"] .window-controls [data-action="toggle-maximise"]`) {
+	selectors := strings.Join(strings.Fields(body), " ")
+	if !strings.Contains(selectors, `html[data-mode="settings"] .window-controls [data-action="minimise"]`) ||
+		!strings.Contains(selectors, `html[data-mode="settings"] .window-controls [data-action="toggle-maximise"]`) {
 		t.Fatal("settings popover should show only the close button")
 	}
 	if !strings.Contains(body, `"HideSettings"`) {
@@ -152,11 +153,11 @@ func TestSettingsWindowSizeFitsContent(t *testing.T) {
 	if settingsWindowWidth != 400 {
 		t.Fatalf("settings width is %d, expected 400", settingsWindowWidth)
 	}
-	if settingsWindowHeight >= 500 {
+	if settingsWindowHeight >= 540 {
 		t.Fatalf("settings height %d leaves empty space under the form", settingsWindowHeight)
 	}
-	if settingsWindowHeight < 456 {
-		t.Fatalf("settings height %d clips the bottom padding", settingsWindowHeight)
+	if settingsWindowHeight < 524 {
+		t.Fatalf("settings height %d clips the server menu or bottom padding", settingsWindowHeight)
 	}
 	if settingsWindowWindowsExtraHeight < 16 {
 		t.Fatal("Windows settings window needs extra height so DWM frame does not eat the 28px bottom gap")

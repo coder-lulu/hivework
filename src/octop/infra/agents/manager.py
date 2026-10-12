@@ -2993,8 +2993,12 @@ class AgentManager:
                 from octop.infra.agents.builtin_skills import (  # noqa: PLC0415
                     sync_octop_builtin_skills,
                 )
+                from octop.infra.agents.experts.brand_sync import (  # noqa: PLC0415
+                    sync_default_assistant_branding,
+                )
 
                 synced_skills = await sync_octop_builtin_skills(ws)
+                await sync_default_assistant_branding(ws)
                 logger.info(
                     "Agent %s: synced Octop built-in skills=%s",
                     row.agent_id,

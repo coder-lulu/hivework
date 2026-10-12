@@ -5,6 +5,8 @@
 .vscode
 *.md
 !README.md
+# SKILL.md / SOUL.md and plugin Markdown are runtime package resources.
+!src/**/*.md
 
 # Python dev and cache
 __pycache__

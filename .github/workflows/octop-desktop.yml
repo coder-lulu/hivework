@@ -57,7 +57,7 @@ env:
 jobs:
   frontend:
     name: Build dashboard
-    if: github.event_name != 'workflow_dispatch' || github.event.inputs.attach_from_run == ''
+    if: (github.repository == 'TencentCloud/Octop' || github.event_name == 'pull_request') && (github.event_name != 'workflow_dispatch' || github.event.inputs.attach_from_run == '')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -82,7 +82,7 @@ jobs:
   # selected runners start — PRs → darwin-* + windows-*; dispatch honors `platforms`.
   select-platforms:
     name: Select platforms
-    if: github.event_name != 'workflow_dispatch' || github.event.inputs.attach_from_run == ''
+    if: (github.repository == 'TencentCloud/Octop' || github.event_name == 'pull_request') && (github.event_name != 'workflow_dispatch' || github.event.inputs.attach_from_run == '')
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set.outputs.matrix }}
@@ -127,6 +127,7 @@ jobs:
           PY
 
   package:
+    if: (github.repository == 'TencentCloud/Octop' || github.event_name == 'pull_request')
     name: "${{ matrix.plat }}"
     needs: [frontend, select-platforms]
     runs-on: ${{ matrix.os }}
@@ -313,7 +314,8 @@ jobs:
     needs: package
     # always(): still run when package was skipped (attach_from_run rebuild skip).
     if: >-
-      always() &&
+      github.repository == 'TencentCloud/Octop' &&
+      (always() &&
       !cancelled() &&
       (needs.package.result == 'success' || needs.package.result == 'skipped') &&
       (
@@ -326,7 +328,7 @@ jobs:
          (github.event_name == 'push' ||
           (github.event_name == 'workflow_dispatch' &&
            github.event.inputs.attach_release == 'true')))
-      )
+      ))
     runs-on: ubuntu-latest
     permissions:
       contents: write

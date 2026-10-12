@@ -184,16 +184,19 @@ $script:ConsoleAvailable = $false
 function Prepare-Console {
     param([string]$RepoDir)
     $consoleDest = Join-Path $RepoDir "src\octop\dashboard"
-    if (Test-Path (Join-Path $consoleDest "index.html")) {
+    $branded = Test-Path (Join-Path $RepoDir "src\octop\branding\profile.json")
+    if (-not $branded -and (Test-Path (Join-Path $consoleDest "index.html"))) {
         $script:ConsoleAvailable = $true
         return
     }
     $packageJson = Join-Path $RepoDir "dashboard\package.json"
     if (-not (Test-Path $packageJson)) {
+        if ($branded) { Stop-WithError "HiveWork source installation requires dashboard sources." }
         Write-Warn "dashboard source not found - web UI won't be available."
         return
     }
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        if ($branded) { Stop-WithError "HiveWork source installation requires Node.js/npm to rebuild its branded dashboard." }
         Write-Warn "npm not found - skipping dashboard build."
         return
     }
@@ -201,8 +204,17 @@ function Prepare-Console {
     Push-Location (Join-Path $RepoDir "dashboard")
     try {
         npm ci
-        if ($LASTEXITCODE -ne 0) { return }
+        if ($LASTEXITCODE -ne 0) {
+            if ($branded) { Stop-WithError "HiveWork dashboard dependency installation failed." }
+            return
+        }
         npm run build
+        if ($branded) {
+            if ($LASTEXITCODE -ne 0) { Stop-WithError "HiveWork dashboard build failed." }
+            Set-Location $RepoDir
+            & $VenvPython scripts/check_branding.py --built
+            if ($LASTEXITCODE -ne 0) { Stop-WithError "HiveWork brand verification failed; source installation stopped." }
+        }
         if (Test-Path (Join-Path $consoleDest "index.html")) {
             $script:ConsoleAvailable = $true
             Write-Info "Dashboard built successfully"
@@ -219,7 +231,14 @@ if ($FromSource) {
         $SourceDir = (Resolve-Path $SourceDir).Path
         Write-Info "Installing from local source: $SourceDir"
         Prepare-Console $SourceDir
-        uv pip install "${SourceDir}${ExtrasSuffix}" --python $VenvPython
+        $sourceInstallArgs = @()
+        if (Test-Path (Join-Path $SourceDir "src\octop\branding\profile.json")) {
+            $sourceInstallArgs += @("--reinstall-package", "octop")
+        }
+        uv pip install "${SourceDir}${ExtrasSuffix}" --python $VenvPython @sourceInstallArgs
+        if ($sourceInstallArgs.Count -gt 0 -and $LASTEXITCODE -ne 0) {
+            Stop-WithError "HiveWork source reinstallation failed."
+        }
     } else {
         if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
             Stop-WithError "git required for -FromSource. Install from https://git-scm.com/"
@@ -228,7 +247,14 @@ if ($FromSource) {
         try {
             git clone --depth 1 $OctopRepo $cloneDir
             Prepare-Console $cloneDir
-            uv pip install "${cloneDir}${ExtrasSuffix}" --python $VenvPython
+            $sourceInstallArgs = @()
+            if (Test-Path (Join-Path $cloneDir "src\octop\branding\profile.json")) {
+                $sourceInstallArgs += @("--reinstall-package", "octop")
+            }
+            uv pip install "${cloneDir}${ExtrasSuffix}" --python $VenvPython @sourceInstallArgs
+            if ($sourceInstallArgs.Count -gt 0 -and $LASTEXITCODE -ne 0) {
+                Stop-WithError "HiveWork source reinstallation failed."
+            }
         } finally {
             if (Test-Path $cloneDir) { Remove-Item $cloneDir -Recurse -Force -ErrorAction SilentlyContinue }
         }

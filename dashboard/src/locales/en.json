@@ -82,6 +82,7 @@
     "notImplemented": "This page is under construction."
   },
   "apiErrors": {
+    "UPDATE_BRAND_MANAGED": "{{brand}} updates are managed through its own releases. Rebuild from source or use a HiveWork image: {{repository_url}}",
     "AUTH_FAILED": "Authentication failed.",
     "TOKEN_EXPIRED": "Session expired. Please sign in again.",
     "SETUP_REQUIRED": "Initial setup is required.",
@@ -5259,6 +5260,12 @@
     "expertsRequired": "This page needs an expert"
   },
   "login": {
+    "serverSettings": {
+      "label": "Server",
+      "manage": "Server settings",
+      "settings": "Settings",
+      "description": "Add or switch servers. Your last selection is remembered."
+    },
     "title": "Sign in",
     "subtitle": "An intelligent partner that understands you, helps you, and grows with you",
     "username": "Username or email",

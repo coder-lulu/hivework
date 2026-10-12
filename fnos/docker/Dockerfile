@@ -7,7 +7,7 @@
 # Playwright Chromium 不再预装，浏览器自动化可在控制台按需安装。
 #
 # 构建上下文必须为仓库根目录（fnpack / CI 中以仓库根为 context）：
-#   docker build -f fnos/docker/Dockerfile -t ghcr.io/tencentcloud/octop:latest .
+#   docker build -f fnos/docker/Dockerfile -t ghcr.io/coder-lulu/hivework:local-fnos .
 #
 # 国内加速（可选 build-arg）：
 #   PIP_INDEX_URL / PIP_TRUSTED_HOST / NPM_REGISTRY / APT_MIRROR
@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/root/.npm \
     && npm ci --prefer-offline --no-audit
 
 COPY dashboard/ ./
+COPY src/octop/branding/ ../src/octop/branding/
 
 RUN mkdir -p ../src/octop/dashboard
 RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npx vite build
@@ -37,10 +38,10 @@ RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-LABEL maintainer="TencentCloud"
-LABEL org.opencontainers.image.title="Octop"
-LABEL org.opencontainers.image.description="Smarter self-hosted AI assistant — multi-user, multi-agent (FnOS build with all addons)."
-LABEL org.opencontainers.image.source="https://github.com/TencentCloud/Octop"
+LABEL maintainer="HiveWork"
+LABEL org.opencontainers.image.title="HiveWork"
+LABEL org.opencontainers.image.description="HiveWork self-hosted AI workspace (FnOS build with all addons)."
+LABEL org.opencontainers.image.source="https://github.com/coder-lulu/hivework"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -80,7 +81,8 @@ COPY src/ ./src/
 COPY --from=frontend-builder /build/src/octop/dashboard/ ./src/octop/dashboard/
 
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 安装项目 + desktop 附加组件（Playwright Chromium 不预装，控制台可按需下载）
 # UV_INDEX_URL 首选阿里云镜像加速；UV_DEFAULT_INDEX 保留 PyPI 作为兜底，

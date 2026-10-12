@@ -8,9 +8,11 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from octop.api.deps import is_jwt_exempt_path
+from octop.branding import brand_name
 
-API_DESCRIPTION = """\
-**Octop** is a smarter, self-hosted AI assistant for multiple users and agents. All routes are served under `/api`.
+API_DESCRIPTION = (
+    f"**{brand_name()}**"
+    + """ is a smarter, self-hosted AI assistant for multiple users and agents. All routes are served under `/api`.
 
 ## Authentication
 
@@ -56,6 +58,7 @@ SPA can show a toast even when the chat socket is not subscribed.
 
 HITL resume still uses `POST /api/agents/{agent_id}/chat/hitl/resume` (SSE).
 """
+)
 
 OPENAPI_TAGS: list[dict[str, str]] = [
     {
@@ -83,7 +86,7 @@ OPENAPI_TAGS: list[dict[str, str]] = [
     },
     {
         "name": "bridge",
-        "description": "Link this Octop to remote Octop instances (HTTP tunnel + remote chat).",
+        "description": f"Link this {brand_name()} to compatible remote instances (HTTP tunnel + remote chat).",
     },
     {
         "name": "knowledge",

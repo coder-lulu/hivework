@@ -1,0 +1,98 @@
+name: HiveWork Build Artifacts
+
+# Deliberately manual: build reviewable artifacts, with no registry/Release upload.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    if: github.repository == 'coder-lulu/hivework'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Build and verify branded dashboard
+        run: |
+          make build-frontend
+          python scripts/check_branding.py --built
+      - name: Build wheel from this fork
+        run: uv build --wheel --out-dir dist
+      - name: Verify wheel without workspace imports
+        run: |
+          mkdir -p logs/hivework-branding/distribution
+          uv venv logs/hivework-branding/distribution/venv --python 3.12
+          uv pip install --python logs/hivework-branding/distribution/venv/bin/python --no-deps dist/*.whl
+          cd logs/hivework-branding/distribution
+          venv/bin/python -I - <<'PY'
+          import json
+          from importlib.resources import files
+          package = files('octop')
+          profile = json.loads((package / 'branding' / 'profile.json').read_text())
+          assert profile['id'] == 'hivework'
+          assert profile['allow_official_self_update'] is False
+          assert 'HiveWork' in (package / 'dashboard' / 'index.html').read_text()
+          print('Installed HiveWork wheel contains brand profile and dashboard')
+          PY
+      - name: Record build provenance
+        run: |
+          git rev-parse HEAD > dist/hivework-commit.txt
+          git remote get-url origin > dist/hivework-source.txt
+          sha256sum dist/*.whl > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hivework-wheel-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+  docker:
+    if: github.repository == 'coder-lulu/hivework'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build local HiveWork image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ghcr.io/coder-lulu/hivework:${{ github.sha }}
+      - name: Verify and archive image
+        env:
+          IMAGE: ghcr.io/coder-lulu/hivework:${{ github.sha }}
+        run: |
+          mkdir -p dist
+          docker run --rm --entrypoint python "$IMAGE" -c "import json; from importlib.resources import files; p=files('octop'); b=json.loads((p/'branding'/'profile.json').read_text()); assert b['id']=='hivework'; assert b['allow_official_self_update'] is False; assert 'HiveWork' in (p/'dashboard'/'index.html').read_text()"
+          container=$(docker run -d --network none --tmpfs /data "$IMAGE")
+          trap 'docker rm -f "$container" >/dev/null' EXIT
+          ready=false
+          for attempt in $(seq 1 45); do
+            if docker exec "$container" curl --fail --silent http://127.0.0.1:8088/api/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = true
+          docker rm -f "$container" >/dev/null
+          trap - EXIT
+          docker image inspect "$IMAGE" > dist/hivework-image.json
+          docker save "$IMAGE" | gzip > dist/hivework-image.tar.gz
+          git rev-parse HEAD > dist/hivework-commit.txt
+          sha256sum dist/hivework-image.tar.gz > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hivework-docker-amd64-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error

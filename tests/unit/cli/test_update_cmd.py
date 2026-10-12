@@ -236,3 +236,9 @@ def test_update_editable_install_exits_nonzero(monkeypatch: pytest.MonkeyPatch) 
     result = runner.invoke(cli, ["update", "--yes"])
     assert result.exit_code == 1
     assert "/src/orca" in result.output
+
+
+@pytest.fixture(autouse=True)
+def _allow_upstream_update_algorithms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Preserve coverage of the installer used by upstream-enabled distributions."""
+    monkeypatch.setattr("octop.cli.commands.update.official_self_update_allowed", lambda: True)

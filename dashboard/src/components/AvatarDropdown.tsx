@@ -1,3 +1,4 @@
+import { brand } from "../branding";
 import { useState, useCallback, useEffect, type ReactNode } from "react";
 import {
   Drawer,
@@ -42,6 +43,7 @@ import { useUserRole } from "../hooks/useUserRole";
 import { useIsMobile } from "../hooks/useIsMobile";
 import ThemeSwitcher from "./ThemeSwitcher";
 import PaletteSwitcher from "./PaletteSwitcher";
+import CurrentVersionBadge from "./CurrentVersionBadge";
 import type { OctopUser } from "../api/modules/auth";
 import { useLayoutMode } from "../context/LayoutModeContext";
 import type { LayoutMode } from "../layouts/layoutModeStorage";
@@ -55,8 +57,8 @@ import {
 } from "../pages/Admin/Users/ProfileAvatar";
 import styles from "./AvatarDropdown.module.less";
 
-const GITHUB_URL = "https://github.com/TencentCloud/Octop";
-const HELP_FEEDBACK_URL = "https://octop.cloud";
+const GITHUB_URL = brand.repository_url;
+const HELP_FEEDBACK_URL = brand.support_url;
 const APP_OAUTH_KINDS = new Set(["feishu", "dingtalk", "wecom"]);
 
 const PASSWORD_FIELD_ICON_PROPS = {
@@ -423,6 +425,9 @@ export default function AvatarDropdown({
         >
           <RefreshCw size={16} strokeWidth={1.8} />
           <span>{t("account.checkUpdates")}</span>
+          <span className={styles.menuItemVersion}>
+            <CurrentVersionBadge />
+          </span>
         </button>
       )}
 

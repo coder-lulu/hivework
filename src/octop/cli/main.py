@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 
 import click
 
+from octop.branding import brand_name
 from octop.cli.registry import COMMANDS
 
 
@@ -50,7 +51,7 @@ def _get_version() -> str:
 def _print_version(ctx: click.Context, _param: click.Parameter, value: bool) -> None:
     if not value or ctx.resilient_parsing:
         return
-    click.echo(f"octop v{_get_version()}")
+    click.echo(f"{brand_name()} v{_get_version()}")
     ctx.exit()
 
 
@@ -80,7 +81,11 @@ class _LazyCLI(click.Group):
                 formatter.write_dl(rows)
 
 
-@click.group(cls=_LazyCLI, context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(
+    cls=_LazyCLI,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help=f"{brand_name()} command-line interface.",
+)
 @click.option(
     "-v",
     "--version",
@@ -88,7 +93,7 @@ class _LazyCLI(click.Group):
     is_eager=True,
     expose_value=False,
     callback=_print_version,
-    help="Show the installed octop version.",
+    help=f"Show the installed {brand_name()} version.",
 )
 @click.option(
     "--user",

@@ -3,6 +3,7 @@ package main
 import "fmt"
 
 const (
+	copyStatusChooseServer     = "status.choose_server"
 	copyStatusConnecting       = "status.connecting"
 	copyStatusCheckingRuntime  = "status.checking_runtime"
 	copyStatusStartingService  = "status.starting_service"
@@ -25,10 +26,29 @@ const (
 	copyHealthNotReady5xx      = "health.not_ready_5xx"
 	copyHealthNotReadyConnect  = "health.not_ready_connect"
 	copyHealthNotReady         = "health.not_ready"
+	copyErrorServerURL         = "server.invalid_url"
+	copyErrorServerDuplicate   = "server.duplicate"
+	copyErrorServerUnknown     = "server.unknown"
+	copyErrorServerUnavailable = "server.unavailable"
+	copyErrorServerInUse       = "server.in_use"
+	copyErrorServerSave        = "server.save_failed"
+	copyErrorServerAccess      = "server.access_denied"
+	copyServerLocalLabel       = "server.local_label"
+	copyErrorServerLoad        = "server.load_failed"
 )
 
 var desktopCopy = map[Locale]map[string]string{
 	LocaleEN: {
+		copyStatusChooseServer:     "Choose an existing server or use the local service on this computer.",
+		copyErrorServerLoad:        "Could not read desktop-servers.json. Check the file and its permissions, then restart the desktop app. Your settings have been preserved.",
+		copyErrorServerURL:         "Enter an HTTP or HTTPS server address without a path, credentials or query parameters.",
+		copyErrorServerDuplicate:   "This server address is already saved.",
+		copyErrorServerUnknown:     "This server is no longer in the saved list. Refresh and select it again.",
+		copyErrorServerUnavailable: "Could not connect to this HiveWork server. Check its address and connection, then try again.",
+		copyErrorServerInUse:       "Set another server or the local service as default before changing or deleting this default address.",
+		copyErrorServerSave:        "Could not save server settings. Check permissions for the desktop data directory.",
+		copyErrorServerAccess:      "Open server settings in the desktop app to manage connections.",
+		copyServerLocalLabel:       "Local service",
 		copyStatusConnecting:       "Connecting to Octop…",
 		copyStatusCheckingRuntime:  "Checking the runtime…",
 		copyStatusStartingService:  "Starting the Octop service…",
@@ -53,6 +73,16 @@ var desktopCopy = map[Locale]map[string]string{
 		copyHealthNotReady:         "Octop did not become ready within %s (%s). Make sure Octop is running at this address, or check the terminal logs.",
 	},
 	LocaleZH: {
+		copyServerLocalLabel:       "本地服务",
+		copyStatusChooseServer:     "请选择连接已有服务器，或使用此电脑上的本地服务。",
+		copyErrorServerLoad:        "无法读取 desktop-servers.json，请检查文件和权限后重启客户端。原配置已保留。",
+		copyErrorServerURL:         "请输入 HTTP 或 HTTPS 服务器根地址，不包含路径、账号密码或查询参数。",
+		copyErrorServerDuplicate:   "该服务器地址已保存。",
+		copyErrorServerUnknown:     "该服务器已不在保存列表中，请刷新后重新选择。",
+		copyErrorServerUnavailable: "无法连接该蜂巢智工服务器，请检查地址和网络后重试。",
+		copyErrorServerInUse:       "请先将其他服务器或本地服务设为默认，再修改或删除默认地址。",
+		copyErrorServerSave:        "无法保存服务器设置，请检查桌面数据目录的写入权限。",
+		copyErrorServerAccess:      "请通过桌面客户端的服务器设置窗口管理连接。",
 		copyStatusConnecting:       "正在连接 Octop…",
 		copyStatusCheckingRuntime:  "正在检查运行环境…",
 		copyStatusStartingService:  "正在启动 Octop 服务…",

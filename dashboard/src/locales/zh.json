@@ -82,6 +82,7 @@
     "notImplemented": "页面建设中。"
   },
   "apiErrors": {
+    "UPDATE_BRAND_MANAGED": "{{brand}}通过专属发行渠道升级。请从源码重新构建或使用 HiveWork 镜像：{{repository_url}}",
     "AUTH_FAILED": "认证失败。",
     "TOKEN_EXPIRED": "登录已过期，请重新登录。",
     "SETUP_REQUIRED": "需要完成初始设置。",
@@ -5259,6 +5260,12 @@
     "expertsRequired": "此页需要专家"
   },
   "login": {
+    "serverSettings": {
+      "label": "服务器",
+      "manage": "设置服务器",
+      "settings": "设置",
+      "description": "添加、切换服务器，自动记住上次选择。"
+    },
     "title": "登录",
     "subtitle": "懂你、帮你、陪你成长的智能伙伴",
     "username": "用户名或邮箱",

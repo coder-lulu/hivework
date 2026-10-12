@@ -1,7 +1,7 @@
 {
     ".url": {
         "octop-native.Application": {
-            "title": "OCTOP",
+            "title": "蜂巢智工（HiveWork）",
             "icon": "images/icon_{0}.png",
             "type": "iframe",
             "protocol": "http",

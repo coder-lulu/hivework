@@ -21,12 +21,22 @@ def _resolve_node(table: dict[str, Any], key: str) -> str | None:
     return node if isinstance(node, str) else None
 
 
+def _merge_overrides(table: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+    merged = table.copy()
+    for key, value in overrides.items():
+        merged[key] = _merge_overrides(table[key], value) if isinstance(value, dict) else value
+    return merged
+
+
 @lru_cache(maxsize=1)
 def _load_all() -> dict[Locale, dict[str, Any]]:
     out: dict[Locale, dict[str, Any]] = {}
     for loc in ("en", "zh"):
         raw = resources.files("octop.i18n").joinpath(f"{loc}.json").read_text(encoding="utf-8")
-        out[loc] = json.loads(raw)
+        overrides = resources.files("octop.branding").joinpath(f"backend.{loc}.json")
+        out[loc] = _merge_overrides(
+            json.loads(raw), json.loads(overrides.read_text(encoding="utf-8"))
+        )
     return out
 
 

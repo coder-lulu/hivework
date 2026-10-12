@@ -1,3 +1,5 @@
+import { apiErrorMessage } from "../../../utils/apiError";
+import { brand } from "../../../branding";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { App, Collapse, Switch } from "antd";
@@ -147,7 +149,7 @@ function UpgradeGuide() {
   );
 }
 
-export default function UpdateConfig() {
+function OfficialUpdateConfig() {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const [status, setStatus] = useState<UpdateStatus | null>(null);
@@ -588,5 +590,104 @@ export default function UpdateConfig() {
         <UpgradeGuide />
       </div>
     </div>
+  );
+}
+
+/** Branded distributions are upgraded through their own release channel. */
+function ManagedUpdateConfig() {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [statusError, setStatusError] = useState<unknown>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [statusAttempt, setStatusAttempt] = useState(0);
+  const { restartPhase, isRestarting, requestRestart } =
+    useServiceRestartContext();
+  useEffect(() => {
+    let active = true;
+    setLoadingStatus(true);
+    setStatusError(null);
+    void updateApi
+      .getUpdateStatus()
+      .then((status) => {
+        if (active) setStatus(status);
+      })
+      .catch((error: unknown) => {
+        if (active) setStatusError(error);
+      })
+      .finally(() => {
+        if (active) setLoadingStatus(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [statusAttempt]);
+  return (
+    <div className={styles.container}>
+      <TabPanelHeader
+        icon={<RefreshCw size={22} />}
+        title={t("brand.updateTitle")}
+        description={t("brand.updateDescription")}
+      />
+      <section className={styles.panel}>
+        <p className={styles.versionLabel}>
+          {t("advancedSettings.update.currentVersion")}
+        </p>
+        <p className={styles.versionValue}>{status?.current_version ?? "—"}</p>
+        {loadingStatus && <p role="status">{t("common.loading")}</p>}
+        {statusError !== null && (
+          <div role="alert" className={`${styles.alert} ${styles.alertError}`}>
+            <span>
+              {apiErrorMessage(statusError, t("common.unknownError"), t)}
+            </span>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => setStatusAttempt((attempt) => attempt + 1)}
+              disabled={loadingStatus}
+            >
+              {t("common.retry")}
+            </button>
+          </div>
+        )}
+        <p className={styles.panelDesc}>{t("brand.updateSource")}</p>
+        <div className={styles.actions}>
+          {status?.service_mode && (
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={requestRestart}
+              disabled={restartPhase !== "idle" && restartPhase !== "timeout"}
+            >
+              <Power size={14} />
+              {isRestarting
+                ? t("advancedSettings.update.restarting")
+                : t("advancedSettings.update.restartServiceBtn")}
+            </button>
+          )}
+          <a
+            href={`${brand.repository_url}/blob/develop/docs/hivework-install.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t("brand.updateGuide")}
+          </a>
+          <a
+            href={`${brand.repository_url}/releases`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t("brand.releases")}
+          </a>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function UpdateConfig() {
+  return brand.allow_official_self_update ? (
+    <OfficialUpdateConfig />
+  ) : (
+    <ManagedUpdateConfig />
   );
 }

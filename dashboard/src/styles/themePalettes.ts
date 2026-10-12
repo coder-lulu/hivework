@@ -1,3 +1,4 @@
+import { brand } from "../branding";
 /** Brand palettes — orthogonal to light/dark mode (`data-theme`). */
 
 export type ThemePalette =
@@ -25,7 +26,7 @@ export const VALID_PALETTES: ThemePalette[] = [
 /** Curated palettes only — "custom" is handled separately via a hex value. */
 export const CURATED_PALETTES: ThemePalette[] = [...VALID_PALETTES];
 
-export const DEFAULT_PALETTE: ThemePalette = "rose";
+export const DEFAULT_PALETTE: ThemePalette = brand.default_palette;
 export const DEFAULT_CUSTOM_COLOR = "#4B74FA";
 
 /** True when the value is one of the curated palette keys (not "custom"/hex). */

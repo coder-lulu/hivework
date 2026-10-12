@@ -14,6 +14,7 @@ from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from octop.branding import brand_name
 from octop.config import OctopConfig, load_config
 from octop.infra.agents.experts.catalog import ExpertCatalog, default_library_root
 from octop.infra.agents.manager import AgentManager
@@ -591,13 +592,15 @@ class OctopServer:
         else:
             new_pw = None
         if new_pw is not None:
+            title = f"{brand_name()} first-run wizard password (one-time use):"
+            file_hint = f"File: ~/{WIZARD_FILE_NAME}"
             banner = (
                 "\n\033[33m"
                 "╔══════════════════════════════════════════════════════════╗\n"
-                "║  Octop first-run wizard password (one-time use):          ║\n"
+                f"║  {title:<54}  ║\n"
                 f"║  {new_pw:<54}  ║\n"
                 "║  Open the dashboard and paste it into the setup wizard.  ║\n"
-                "║  File: ~/octop-login.txt                                   ║\n"
+                f"║  {file_hint:<54}  ║\n"
                 "╚══════════════════════════════════════════════════════════╝"
                 "\033[0m\n"
             )

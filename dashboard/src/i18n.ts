@@ -1,3 +1,4 @@
+import { applyBranding } from "./branding";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { getApiUrl } from "./api/config";
@@ -10,11 +11,11 @@ import {
 
 export type { UiLocale } from "./utils/localePrefs";
 
-async function loadLocaleBundle(locale: UiLocale) {
+export async function loadLocaleBundle(locale: UiLocale) {
   if (locale === "zh") {
-    return (await import("./locales/zh.json")).default;
+    return applyBranding((await import("./locales/zh.json")).default, locale);
   }
-  return (await import("./locales/en.json")).default;
+  return applyBranding((await import("./locales/en.json")).default, locale);
 }
 
 export async function ensureLocaleBundle(locale: UiLocale): Promise<void> {

@@ -45,7 +45,7 @@
 
 **Octop** 是一个开源、自托管的 AI 助手平台，支持多用户、多 Agent。它在单进程中同时提供 Web 控制台、CLI、IM 通道（飞书、钉钉、QQ、Discord、企业微信等）和定时任务，所有数据都保存在你自己的机器上。
 
-![图 1.1 — Octop 产品总览](assets/overview.png)
+![图 1.1 — HiveWork · 蜂巢智工 Logo](assets/overview.png)
 
 核心特性速览：
 
@@ -463,7 +463,7 @@ Octop 支持两个方向的 ACP 集成：
 
 | 编号 | 位置 | 文件名 | 状态 | 内容说明 |
 |------|------|--------|------|----------|
-| 图 1.1 | 一、简介 | `overview.png` | ✅ 已就位 | Octop 品牌 Banner |
+| 图 1.1 | 一、简介 | `overview.png` | ✅ 已就位 | HiveWork · 蜂巢智工 Logo |
 | 图 3.1 | 3.2 向导步骤 | `setup-01-steps.png` | ✅ 已就位 | 向导步骤条（验证密码页） |
 | 图 3.2 | 3.2 管理员 | `setup-02-admin.png` | ✅ 已就位 | 创建管理员账号表单 |
 | 图 3.3 | 3.2 模型 | `setup-03-model.png` | ✅ 已就位 | 向导内预设供应商选择 |

@@ -33,8 +33,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/dist"
 
+# HiveWork Docker packages need an explicitly reviewed image; never default upstream.
+if [ -f "$ROOT/src/octop/branding/profile.json" ] && { [ "$#" -eq 0 ] || printf '%s\n' "$@" | grep -qx docker; }; then
+  if [[ ! "${FPK_IMAGE_TAG:-}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+    echo "HiveWork Docker FPK requires FPK_IMAGE_TAG for an explicitly reviewed ghcr.io/coder-lulu/hivework image." >&2
+    exit 1
+  fi
+fi
+
 # 使用仓库内的临时目录，避免 Windows 风格 TMPDIR 在 Git Bash 下被错误解析
-TMP="$(mktemp -d "$ROOT/.buildtmp.XXXXXX")"
+mkdir -p "$ROOT/logs/hivework-branding/fpk"
+TMP="$(mktemp -d "$ROOT/logs/hivework-branding/fpk/build.XXXXXX")"
 cleanup() { rm -rf "$TMP" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
@@ -156,8 +165,10 @@ build_one() {
     echo "[build-fpk] native cmd/fpk-arch=$packed_arch"
   fi
 
-  # Docker 版 compose 钉与本包相同的镜像标签；测试包可用 FPK_IMAGE_TAG=latest 覆盖。
-  if [ "$KIND" = "docker" ]; then
+  # Stage brand icons and require an explicit HiveWork image or native package.
+  if [ -f "$ROOT/src/octop/branding/profile.json" ]; then
+    python3 "$ROOT/scripts/prepare_platform_branding.py" --fpk "$BUILD" --kind "$KIND"
+  elif [ "$KIND" = "docker" ]; then
     local compose="$BUILD/app/docker/docker-compose.yaml" image_tag="${FPK_IMAGE_TAG:-$VER}"
     if [ -f "$compose" ]; then
       sed -i.bak -E "s#ghcr.io/tencentcloud/octop:[^[:space:]]+#ghcr.io/tencentcloud/octop:${image_tag}#" "$compose"
