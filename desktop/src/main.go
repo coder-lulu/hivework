@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"runtime"
@@ -24,14 +25,25 @@ const trayDoubleClick = 400 * time.Millisecond
 
 // App is the Wails service bound to the shell UI.
 type App struct {
-	app            *application.App
-	window         *application.WebviewWindow
-	settingsWindow *application.WebviewWindow
-	store          *settingsStore
-	sleep          *sleepGuard
-	cmd            *exec.Cmd
-	mu             sync.Mutex
-	quitting       bool
+	app                *application.App
+	window             *application.WebviewWindow
+	settingsWindow     *application.WebviewWindow
+	serverWindow       *application.WebviewWindow
+	store              *settingsStore
+	servers            *serverStore
+	sleep              *sleepGuard
+	cmd                *exec.Cmd
+	mu                 sync.Mutex
+	connectionMu       sync.Mutex
+	localStartMu       sync.Mutex
+	quitting           bool
+	dashboardBase      string
+	connectionCancel   context.CancelFunc
+	connectionPhase    string
+	connectionError    string
+	windowsReady       chan struct{}
+	mainRuntimeReady   bool
+	serverRuntimeReady bool
 
 	trayClickMu    sync.Mutex
 	lastTrayClick  time.Time
@@ -46,7 +58,12 @@ func (a *App) ServiceStartup(context.Context, application.ServiceOptions) error 
 
 func (a *App) ServiceShutdown() error {
 	a.sleep.stop()
+	a.connectionMu.Lock()
+	defer a.connectionMu.Unlock()
 	a.mu.Lock()
+	if a.connectionCancel != nil {
+		a.connectionCancel()
+	}
 	cmd := a.cmd
 	a.cmd = nil
 	ownsPort := a.ownsListenPort
@@ -165,38 +182,98 @@ func (a *App) setStatus(msg string) {
 }
 
 func (a *App) boot() {
+	a.bootWhenWindowsReady(a.beginConnection())
+}
+
+func (a *App) bootWhenWindowsReady(ctx context.Context) {
+	if a.waitForWindows(ctx) == nil {
+		a.bootSelected(ctx)
+	}
+}
+
+func (a *App) waitForWindows(ctx context.Context) error {
+	if a.windowsReady == nil {
+		return ctx.Err()
+	}
+	select {
+	case <-a.windowsReady:
+		return ctx.Err()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (a *App) whenWindowsReady(action func()) {
+	if a.windowsReady == nil {
+		action()
+		return
+	}
+	select {
+	case <-a.windowsReady:
+		action()
+	default:
+		ctx := context.Background()
+		if a.app != nil {
+			ctx = a.app.Context()
+		}
+		go func() {
+			if a.waitForWindows(ctx) == nil {
+				action()
+			}
+		}()
+	}
+}
+
+func (a *App) markWindowRuntimeReady(mainWindow bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if mainWindow {
+		a.mainRuntimeReady = true
+	} else {
+		a.serverRuntimeReady = true
+	}
+	if a.windowsReady != nil && a.mainRuntimeReady && a.serverRuntimeReady {
+		select {
+		case <-a.windowsReady:
+		default:
+			close(a.windowsReady)
+		}
+	}
+}
+
+func (a *App) startLocal(ctx context.Context) (string, error) {
+	a.localStartMu.Lock()
+	defer a.localStartMu.Unlock()
 	locale := LocaleEN
 	if a.store != nil {
 		locale = a.store.get().Locale
 	}
-	if url := os.Getenv("OCTOP_DESKTOP_URL"); url != "" {
-		a.setStatus(desktopText(locale, copyStatusConnecting))
-		if err := waitHealth(locale, url, 60*time.Second); err != nil {
-			a.setStatus(err.Error())
-			return
-		}
-		a.showDashboard(url)
-		return
+	if ctx.Err() != nil {
+		return "", ctx.Err()
 	}
-	a.setStatus(desktopText(locale, copyStatusCheckingRuntime))
-	if err := ensurePortable(locale, a.setStatus); err != nil {
-		a.setStatus(err.Error())
-		return
-	}
-	root := portableDir()
-	a.mu.Lock()
-	stopOctop(a.cmd)
-	a.cmd = nil
-	a.mu.Unlock()
 	host, preferred := resolveListen()
 	if existing := findRunningDashboard(host, preferred); existing != "" {
 		a.setStatus(desktopText(locale, copyStatusUsingExisting))
-		if err := waitHealth(locale, existing, 30*time.Second); err != nil {
-			a.setStatus(err.Error())
-			return
+		if err := waitConnectionHealth(ctx, locale, existing, 30*time.Second); err != nil {
+			return "", err
 		}
-		a.showDashboard(existing)
-		return
+		return existing, ctx.Err()
+	}
+	a.setStatus(desktopText(locale, copyStatusCheckingRuntime))
+	if err := ensurePortable(locale, func(msg string) {
+		if ctx.Err() == nil {
+			a.setStatus(msg)
+		}
+	}); err != nil {
+		return "", err
+	}
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+	root := portableDir()
+	a.stopOwnedBackend()
+	if ctx.Err() != nil {
+		return "", ctx.Err()
 	}
 	port, err := chooseFreePort(host, preferred)
 	if err != nil {
@@ -204,43 +281,58 @@ func (a *App) boot() {
 		var bind cannotBindError
 		switch {
 		case errors.As(err, &busy):
-			a.setStatus(desktopText(locale, copyErrorNoFreePort, busy.From, busy.To))
+			return "", fmt.Errorf("%s", desktopText(locale, copyErrorNoFreePort, busy.From, busy.To))
 		case errors.As(err, &bind):
-			a.setStatus(desktopText(locale, copyErrorCannotBind, bind.Host, bind.Port, bind.Err.Error()))
+			return "", fmt.Errorf("%s", desktopText(locale, copyErrorCannotBind, bind.Host, bind.Port, bind.Err.Error()))
 		default:
-			a.setStatus(err.Error())
+			return "", err
 		}
-		return
 	}
 	a.mu.Lock()
+	if ctx.Err() != nil {
+		a.mu.Unlock()
+		return "", ctx.Err()
+	}
 	cmd, err := startOctop(root, port)
 	a.cmd = cmd
 	a.mu.Unlock()
 	if err != nil {
-		a.setStatus(err.Error())
-		return
+		return "", err
 	}
 	base := dashboardURL(host, port)
 	a.setStatus(desktopText(locale, copyStatusStartingService))
-	if err := waitHealth(locale, base, 2*time.Minute); err != nil {
-		a.setStatus(err.Error())
-		return
+	if err := waitConnectionHealth(ctx, locale, base, 2*time.Minute); err != nil {
+		a.stopBackend(cmd)
+		return "", err
+	}
+	a.connectionMu.Lock()
+	a.mu.Lock()
+	if ctx.Err() != nil || a.cmd != cmd {
+		a.mu.Unlock()
+		a.connectionMu.Unlock()
+		a.stopBackend(cmd)
+		return "", context.Canceled
 	}
 	if err := writeDesktopPort(port); err != nil {
 		log.Printf("desktop port: %v", err)
 	} else {
-		a.mu.Lock()
 		a.ownsListenPort = true
-		a.mu.Unlock()
 	}
-	a.showDashboard(base)
+	a.mu.Unlock()
+	a.connectionMu.Unlock()
+	return base, nil
 }
 
 func (a *App) showDashboard(base string) {
+	a.mu.Lock()
+	a.dashboardBase = base
+	a.mu.Unlock()
 	if a.window == nil {
 		return
 	}
 	a.window.SetURL(base)
+	a.HideServerManager()
+	a.showWindow()
 	a.scheduleDragOverlay()
 	s := a.store.get()
 	go func() {
@@ -258,6 +350,17 @@ func (a *App) hideToTray() {
 }
 
 func (a *App) showWindow() {
+	a.whenWindowsReady(a.showReadyWindow)
+}
+
+func (a *App) showReadyWindow() {
+	a.mu.Lock()
+	needsChoice := a.dashboardBase == "" && (a.connectionPhase == "choose" || a.connectionPhase == "failed")
+	a.mu.Unlock()
+	if needsChoice {
+		a.ShowServerManager()
+		return
+	}
 	if a.window == nil {
 		return
 	}
@@ -331,13 +434,17 @@ func (a *App) requestQuit() {
 func main() {
 	store := &settingsStore{cur: loadSettings()}
 	api := &App{
-		store: store,
-		sleep: &sleepGuard{},
+		store:           store,
+		servers:         newServerStore(),
+		sleep:           &sleepGuard{},
+		connectionPhase: "choose",
+		windowsReady:    make(chan struct{}),
 	}
 
 	app := application.New(application.Options{
 		Name:        "Octop",
-		Description: "Octop desktop",
+		Description: "HiveWork desktop",
+		Logger:      slog.New(slog.NewTextHandler(os.Stderr, nil)),
 		Services: []application.Service{
 			application.NewService(api),
 		},
@@ -357,21 +464,27 @@ func main() {
 	api.app = app
 	attachOpenURLEventListener(app, api.OpenExternal)
 	attachFileDropEventListener(app, api)
+	startupConnection := api.beginConnection()
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		applyAppIcon(app)
+		go api.bootWhenWindowsReady(startupConnection)
 	})
 
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:                "Octop",
+		Title:                "HiveWork · 蜂巢智工",
 		Width:                1200,
 		Height:               800,
 		URL:                  "/",
+		Hidden:               api.needsStartupSelection(),
 		Frameless:            true,
 		AllowSimpleEventEmit: true,
 		EnableFileDrop:       true,
 		BackgroundColour:     application.NewRGB(247, 248, 250),
 	})
 	api.window = win
+	win.OnWindowEvent(events.Common.WindowRuntimeReady, func(_ *application.WindowEvent) {
+		api.markWindowRuntimeReady(true)
+	})
 	app.Event.On("desktop:toggle-maximise", func(_ *application.CustomEvent) {
 		win.ToggleMaximise()
 	})
@@ -381,12 +494,16 @@ func main() {
 	app.Event.On("desktop:close", func(_ *application.CustomEvent) {
 		api.hideToTray()
 	})
-	installDragOverlay := func(_ *application.WindowEvent) { api.scheduleDragOverlay() }
+	installDragOverlay := func(_ *application.WindowEvent) {
+		api.scheduleDragOverlay()
+		api.installServerManagerBridge()
+		api.emitConnectionStatus()
+	}
 	win.OnWindowEvent(events.Mac.WebViewDidFinishNavigation, installDragOverlay)
 	win.OnWindowEvent(events.Windows.WebViewNavigationCompleted, installDragOverlay)
 	win.OnWindowEvent(events.Linux.WindowLoadFinished, installDragOverlay)
 	settingsWin := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "Octop 设置",
+		Title:            "蜂巢智工设置",
 		Width:            settingsWindowWidth,
 		Height:           settingsWindowOuterHeight(),
 		URL:              "/?settings=1",
@@ -400,9 +517,11 @@ func main() {
 		},
 	})
 	api.settingsWindow = settingsWin
+	api.createServerWindow()
 	app.Event.RegisterApplicationEventHook(events.Mac.ApplicationShouldHandleReopen, func(event *application.ApplicationEvent) {
 		event.Cancel()
-		restoreMainAfterDockClick(api.window, api.settingsWindow)
+		api.HideSettings()
+		api.showWindow()
 	})
 
 	win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
@@ -430,7 +549,7 @@ func main() {
 
 	tray := app.SystemTray.New()
 	applyTrayIcon(tray)
-	tray.SetTooltip("Octop")
+	tray.SetTooltip("HiveWork · 蜂巢智工")
 	tray.AttachWindow(settingsWin).WindowOffset(6)
 	showSettings := func() { tray.ShowWindow() }
 	if trayLeftClickShowsSettings(runtime.GOOS) {
@@ -448,7 +567,6 @@ func main() {
 	}
 
 	api.scheduleDragOverlay()
-	go api.boot()
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

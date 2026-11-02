@@ -6,6 +6,74 @@ import (
 	"testing"
 )
 
+func TestEnsurePortableRefreshesRebuiltWheel(t *testing.T) {
+	for _, test := range []struct {
+		name, installedVersion         string
+		installedRecord, bundledRecord []string
+		wantReplace                    bool
+	}{
+		{"changed resources", "1.0.2b6", []string{"dashboard,sha256=old,1"}, []string{"dashboard,sha256=new,1"}, true},
+		{"identical record", "1.0.2b6", []string{"same"}, []string{"same"}, false},
+		{"missing installed record", "1.0.2b6", nil, []string{"new"}, true},
+		{"newer installed version", "1.0.2b7", []string{"newer"}, []string{"older"}, false},
+		{"legacy bundle without record", "1.0.2b6", []string{"existing"}, nil, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("OCTOP_HOME", home)
+			root := portableDir()
+			oldZip := filepath.Join(t.TempDir(), "old.zip")
+			writeTestGreenZip(t, oldZip, test.installedVersion, test.installedRecord...)
+			if err := unzipGreen(oldZip, root); err != nil {
+				t.Fatal(err)
+			}
+			marker := filepath.Join(root, "old-runtime.txt")
+			if err := os.WriteFile(marker, []byte("preserve unless replaced"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(home, "octop.db"), []byte("database"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			newZip := filepath.Join(t.TempDir(), "new.zip")
+			writeTestGreenZip(t, newZip, "1.0.2b6", test.bundledRecord...)
+			t.Setenv("OCTOP_DESKTOP_PORTABLE_ZIP", newZip)
+			backupCalls := 0
+			previousBackup := runSQLiteBackup
+			runSQLiteBackup = func(_, _, destination string) error {
+				backupCalls++
+				if _, err := os.Stat(marker); err != nil {
+					t.Fatal("runtime replaced before database backup")
+				}
+				return os.WriteFile(destination, []byte("backup"), 0o600)
+			}
+			t.Cleanup(func() { runSQLiteBackup = previousBackup })
+			for startup := 0; startup < 2; startup++ {
+				if err := ensurePortable(LocaleZH, func(string) {}); err != nil {
+					t.Fatal(err)
+				}
+				_, err := os.Stat(marker)
+				if os.IsNotExist(err) != test.wantReplace {
+					t.Fatalf("replacement = %v, want %v", os.IsNotExist(err), test.wantReplace)
+				}
+				wantBackups := 0
+				if test.wantReplace {
+					wantBackups = 1
+					record, err := os.ReadFile(filepath.Join(root, "packages", "octop-1.0.2b6.dist-info", "RECORD"))
+					if err != nil || string(record) != test.bundledRecord[0] {
+						t.Fatalf("installed RECORD = %q, %v", record, err)
+					}
+				}
+				if backupCalls != wantBackups {
+					t.Fatalf("startup %d backups = %d, want %d", startup, backupCalls, wantBackups)
+				}
+				if got := portableVersion(root); got != test.installedVersion {
+					t.Fatalf("version = %s, want %s", got, test.installedVersion)
+				}
+			}
+		})
+	}
+}
+
 func TestPortableVersionPrefersNewestPackageMetadata(t *testing.T) {
 	for _, test := range []struct {
 		versions       []string

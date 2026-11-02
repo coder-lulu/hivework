@@ -1035,7 +1035,12 @@ def test_upgrade_keeps_locale_bundle_when_installer_replaces_resources(
     target.mkdir()
     monkeypatch.setenv("OCTOP_GREEN_PACKAGES", str(target))
     monkeypatch.setenv("OCTOP_FPK_SITE_PACKAGES", str(target) if fpk else "")
-    monkeypatch.setattr(loader.resources, "files", lambda _: bundles)
+    original_files = loader.resources.files
+    monkeypatch.setattr(
+        loader.resources,
+        "files",
+        lambda package: bundles if package == "octop.i18n" else original_files(package),
+    )
     monkeypatch.setattr(self_update, "get_local_version", lambda: "1.0.2b4")
     monkeypatch.setattr(self_update, "get_version_in_dir", lambda *args, **kwargs: actual)
     monkeypatch.setattr(self_update, "detect_installer", lambda: "uv")
@@ -1209,3 +1214,9 @@ def test_version_ordering_matches_desktop_comparator(left: str, right: str, want
     left_key, right_key = parse_version(left), parse_version(right)
     sign = (left_key > right_key) - (left_key < right_key)
     assert sign == want, f"{left} vs {right}: server={sign}, desktop={want}"
+
+
+@pytest.fixture(autouse=True)
+def _allow_upstream_update_algorithms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Preserve coverage of the installer used by upstream-enabled distributions."""
+    monkeypatch.setattr("octop.infra.setup.self_update.official_self_update_allowed", lambda: True)

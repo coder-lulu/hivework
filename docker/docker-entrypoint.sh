@@ -13,7 +13,7 @@
 #
 # 首次引导（issue #502）：容器不得因弱默认密码重启循环。未设置或不合格
 # 的 OCTOP_DEFAULT_PASSWORD 不再静默换成随机管理员密码，而是把向导口令
-# 写到数据卷（/data/.octop/octop-login.txt），打开页面走设置向导。
+# 写到数据卷（/data/.octop/hivework-login.txt），打开页面走设置向导。
 #
 # 初始化标记（issue #1866）：PostgreSQL 等外部数据库不会在数据卷生成
 # octop.db，仅凭 DB_FILE 判断会在每次重启重复执行 octop init（管理员
@@ -28,10 +28,32 @@ export OCTOP_HOME
 DB_FILE="${OCTOP_HOME}/octop.db"
 INIT_MARKER="${OCTOP_HOME}/.initialized"
 CREDENTIAL_FILE="${OCTOP_HOME}/credential.txt"
-WIZARD_FILE="${OCTOP_HOME}/octop-login.txt"
+WIZARD_FILE="${OCTOP_HOME}/hivework-login.txt"
 ADMIN_USERNAME="${OCTOP_ADMIN_USERNAME:-admin}"
 ADMIN_DISPLAY_NAME="${OCTOP_ADMIN_DISPLAY_NAME:-Admin}"
 PORT="${OCTOP_PORT:-8088}"
+
+# Keep CLI installations in the existing data volume, including npm -g tools.
+octop_prepare_tools() {
+    local name target
+    mkdir -p "$OCTOP_HOME/tools" "$HOME"
+    for name in .local .skillhub; do
+        target="$OCTOP_HOME/tools/${name#.}"
+        mkdir -p "$target"
+        if [ ! -e "$HOME/$name" ] && [ ! -L "$HOME/$name" ]; then
+            ln -s "$target" "$HOME/$name"
+        fi
+    done
+    export NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX:-$HOME/.local}"
+    export PATH="/app/.venv/bin:$NPM_CONFIG_PREFIX/bin:$HOME/.local/bin:$HOME/.skillhub/bin:$PATH"
+}
+
+octop_start_bundled_desktop() {
+    if [ -x /opt/octop-desktop/start-session.sh ]; then
+        mkdir -p "$OCTOP_HOME/desktop"
+        bash /app/src/octop/infra/control/desktop/scripts/linux/v1.0/start.sh
+    fi
+}
 
 # 与 src/octop/infra/users/password.py 的 _COMMON_PASSWORDS 保持一致。
 _OCTOP_COMMON_PASSWORDS="password password1 password12 password123 12345678 123456789 qwerty123 admin123 welcome1 letmein1 changeme1 octop123 abc12345 iloveyou1"
@@ -81,14 +103,14 @@ octop_validate_password() {
     return 0
 }
 
-# 向导口令写到数据卷，并让 $HOME/octop-login.txt 指向同一文件（服务端读 HOME）。
+# 向导口令写到数据卷，并让 $HOME/hivework-login.txt 指向同一文件（服务端读 HOME）。
 octop_seed_wizard_password() {
     mkdir -p "$OCTOP_HOME" "$HOME"
     if [ ! -s "$WIZARD_FILE" ]; then
         octop_random_password > "$WIZARD_FILE"
         chmod 600 "$WIZARD_FILE"
     fi
-    local home_file="${HOME}/octop-login.txt"
+    local home_file="${HOME}/hivework-login.txt"
     if [ "$home_file" = "$WIZARD_FILE" ]; then
         return 0
     fi
@@ -113,7 +135,7 @@ Open the dashboard and complete the setup wizard.
 
 Wizard password: ${pw}
 
-This password only unlocks the wizard (same value as octop-login.txt).
+This password only unlocks the wizard (same value as hivework-login.txt).
 Choose the admin username and password in the browser.
 EOF
     chmod 600 "$CREDENTIAL_FILE"
@@ -198,6 +220,7 @@ octop_entrypoint_main() {
 
     octop_prepare_arm_runtime
     octop_warn_small_shm
+    octop_prepare_tools
 
     if [ ! -f "$DB_FILE" ] && [ ! -f "$INIT_MARKER" ]; then
         echo "[entrypoint] 首次启动，正在初始化 Octop..."
@@ -241,6 +264,7 @@ octop_entrypoint_main() {
     fi
 
     if [ $# -eq 0 ]; then
+        octop_start_bundled_desktop
         echo "[entrypoint] 正在启动 Octop，端口 $PORT..."
         exec octop run --host 0.0.0.0 --port "$PORT"
     fi

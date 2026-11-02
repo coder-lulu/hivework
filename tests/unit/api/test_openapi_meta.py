@@ -20,7 +20,9 @@ async def test_openapi_has_bearer_security_and_descriptions(tmp_octop_home: Path
         app = build_app(srv)
         with TestClient(app) as c:
             spec = c.get("/api/openapi.json").json()
-        assert spec["info"]["description"]
+        assert spec["info"]["title"] == "HiveWork API"
+        assert "**HiveWork**" in spec["info"]["description"]
+        assert "X-Octop-Access-Token" in spec["info"]["description"]
         assert "BearerAuth" in spec["components"]["securitySchemes"]
         login = spec["paths"]["/api/auth/login"]["post"]
         assert login["summary"] == "Sign in"

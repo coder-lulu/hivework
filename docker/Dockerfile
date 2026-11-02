@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
-# Octop — 多阶段 Docker 构建
+# HiveWork — 多阶段 Docker 构建
 #
 # 阶段 1: 构建 React/TypeScript 前端
 # 阶段 2: Python 运行时 + 预构建前端
 #
 # 用法（在仓库根目录执行，构建上下文为根目录）:
-#   docker build -f docker/Dockerfile -t octop:latest .
-#   docker run -d -p 8088:8088 --shm-size=1g -v octop-data:/data/.octop -e HOME=/data octop:latest
+#   docker build -f docker/Dockerfile -t hivework:local .
+#   docker run -d -p 8088:8088 --shm-size=1g -v octop-data:/data/.octop -e HOME=/data hivework:local
 #
 # --shm-size=1g 是启用远程桌面所必需的。Docker 默认 /dev/shm 只有 64MB，Xvnc 会起不来。
 # compose 文件里已经写了 shm_size: 1gb。
@@ -27,7 +27,7 @@
 #     --build-arg NPM_REGISTRY=https://mirrors.cloud.tencent.com/npm/ \
 #     --build-arg APT_MIRROR=mirrors.cloud.tencent.com \
 #     --build-arg NODE_MAX_OLD_SPACE_SIZE=1024 \
-#     -t octop:latest .
+#     -t hivework:local .
 #
 # 或使用 Compose:
 #   docker compose -f docker/docker-compose.yml up -d
@@ -59,6 +59,8 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     test -x node_modules/.bin/vite
 
 COPY dashboard/ ./
+# Vite reads the shared HiveWork brand profile relative to dashboard/.
+COPY src/octop/branding/ ../src/octop/branding/
 
 RUN mkdir -p ../src/octop/dashboard
 
@@ -71,10 +73,10 @@ RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-LABEL maintainer="OrcaKit Team"
-LABEL org.opencontainers.image.title="Octop"
-LABEL org.opencontainers.image.description="Smarter self-hosted AI assistant — multi-user, multi-agent."
-LABEL org.opencontainers.image.source="https://github.com/TencentCloud/orca"
+LABEL maintainer="HiveWork"
+LABEL org.opencontainers.image.title="HiveWork"
+LABEL org.opencontainers.image.description="HiveWork (蜂巢智工) — self-hosted multi-user, multi-agent AI workspace."
+LABEL org.opencontainers.image.source="https://github.com/coder-lulu/hivework"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -102,6 +104,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libffi-dev \
         libgl1 \
         libglib2.0-0 \
+        libstdc++6 \
+        libatomic1 \
         curl \
         git \
         ripgrep \
@@ -129,7 +133,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && uv sync --frozen --no-install-project --no-dev \
         --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr
 
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="/app/.venv/bin:/data/.local/bin:/data/.skillhub/bin:$PATH" \
+    NPM_CONFIG_PREFIX=/data/.local \
     PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 COPY src/ ./src/
@@ -138,7 +143,13 @@ COPY --from=frontend-builder /build/src/octop/dashboard/ ./src/octop/dashboard/
 COPY .env.example ./
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY docker/bake-desktop.sh /usr/local/bin/bake-desktop.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/bake-desktop.sh
+COPY docker/hivework-tools.sh /etc/profile.d/hivework-tools.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && sed -i 's/\r$//' /etc/profile.d/hivework-tools.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/bake-desktop.sh \
+    && find /app/src -type f -name '*.sh' -exec sed -i 's/\r$//' {} + \
+    && find /app/src/octop/infra/control/desktop/scripts -type f -name '*.sh' \
+        -exec bash -c 'for script; do bash -n "$script" || exit 1; done' _ {} +
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -n "$PIP_INDEX_URL" ]; then \
@@ -147,6 +158,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     fi \
     && uv sync --frozen --no-dev \
         --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr \
+    && /app/.venv/bin/python -m ensurepip --upgrade --default-pip \
     && .venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, pynput, rapidocr, onnxruntime, pymupdf" \
     && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk \
     && apt-get purge -y --auto-remove build-essential \

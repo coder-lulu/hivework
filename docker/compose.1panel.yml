@@ -1,0 +1,35 @@
+# Reuses the PostgreSQL and OpenResty instances managed by 1Panel.
+# Load this exact image with docker load before starting the service.
+name: hivework
+
+services:
+  hivework:
+    image: hivework:20261012-wallpaper-7ca3d5da
+    pull_policy: never
+    container_name: hivework
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18500:8088"
+    volumes:
+      - /data/hivework/data:/data/.octop
+    env_file:
+      - /data/hivework/app.env
+    environment:
+      HOME: /data
+      OCTOP_HOME: /data/.octop
+      OCTOP_BIND_HOST: 0.0.0.0
+      OCTOP_PORT: "8088"
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - 1panel-network
+    # Inherit the image's /api/health check and entrypoint.
+
+networks:
+  1panel-network:
+    external: true
+    name: 1panel-network

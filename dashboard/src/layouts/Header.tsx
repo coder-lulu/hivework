@@ -1,8 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { Layout } from "antd";
 import { Menu as MenuIcon } from "lucide-react";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import AppVersionBadge from "../components/AppVersionBadge";
-import CurrentVersionBadge from "../components/CurrentVersionBadge";
 import { useTheme } from "../context/ThemeContext";
 import { typeSize } from "../utils/mobileTypeScale";
 import { publicUrl } from "../utils/publicUrl";
@@ -22,6 +22,7 @@ interface HeaderProps {
  */
 export default function Header({ onToggle, isMobile }: HeaderProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const mobileLogoSrc = isDark
     ? publicUrl("logo_horizontal_white.png")
     : publicUrl("logo_horizontal_dark.png");
@@ -80,7 +81,7 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
         )}
         <img
           src={mobileLogoSrc}
-          alt="octop"
+          alt={t("brand.name")}
           style={{
             height: 36,
             width: "auto",
@@ -99,7 +100,6 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
             flexShrink: 1,
           }}
         >
-          <CurrentVersionBadge isMobile />
           <AppVersionBadge isMobile />
         </div>
       </div>

@@ -623,3 +623,9 @@ async def test_upgrade_worker_falls_back_to_pinned_version(
     assert stored is not None
     assert stored.status == UpgradeTaskStatus.COMPLETE
     assert stored.new_version == "0.9.33"
+
+
+@pytest.fixture(autouse=True)
+def _allow_upstream_update_algorithms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Preserve coverage of the installer used by upstream-enabled distributions."""
+    monkeypatch.setattr("octop.api.routers.update.official_self_update_allowed", lambda: True)

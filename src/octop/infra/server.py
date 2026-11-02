@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from octop_harness.plugins.registry import PluginRegistry
 
+from octop.branding import brand_name
 from octop.config import OctopConfig, load_config
 from octop.infra.agents.experts.catalog import ExpertCatalog, default_library_root
 from octop.infra.agents.manager import AgentManager
@@ -747,10 +748,11 @@ class OctopServer:
             file_label = f"File: {display_file}"
             if len(file_label) > 54:
                 file_label = f"File: ...{str(file_path)[-(54 - 9) :]}"
+            title = f"{brand_name()} first-run wizard password (one-time use):"
             banner = (
                 "\n\033[33m"
                 "╔══════════════════════════════════════════════════════════╗\n"
-                "║  Octop first-run wizard password (one-time use):          ║\n"
+                f"║  {title:<54}  ║\n"
                 f"║  {new_pw:<54}  ║\n"
                 "║  Open the dashboard and paste it into the setup wizard.  ║\n"
                 f"║  {file_label:<54}  ║\n"

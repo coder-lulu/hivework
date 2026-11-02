@@ -3,9 +3,12 @@
 package main
 
 import (
+	"errors"
 	"os/exec"
 	"syscall"
 )
+
+func isListenAddressInUse(err error) bool { return errors.Is(err, syscall.EADDRINUSE) }
 
 func configureProcGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

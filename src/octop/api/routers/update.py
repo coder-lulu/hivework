@@ -21,16 +21,19 @@ from octop.api.routers.update_store import (
     get_task,
     update_task,
 )
+from octop.branding import brand_name, get_profile
 from octop.infra.errors import ErrorCode, OctopError
 from octop.infra.server import OctopServer
 from octop.infra.setup.self_update import (
     UpgradeResult,
+    brand_update_error,
     fetch_pypi_info,
     get_editable_path,
     get_local_version,
     green_packages_dir,
     is_newer,
     is_prerelease,
+    official_self_update_allowed,
     parse_changelog_for_version,
     run_upgrade,
     validate_upgrade_target,
@@ -99,6 +102,11 @@ def _present_status(
     stable_only: bool,
     include_prerelease: bool,
 ) -> dict[str, Any]:
+    if not official_self_update_allowed():
+        cached = {
+            "current_version": cached.get("current_version"),
+            "last_check_time": cached.get("last_check_time"),
+        }
     current = str(cached.get("current_version") or get_local_version())
     latest_any = cached.get("latest_any") or cached.get("latest_version")
     latest_stable = cached.get("latest_stable")
@@ -108,6 +116,8 @@ def _present_status(
     notes = parse_changelog_for_version(description, latest) if has_update and latest else None
     return {
         "current_version": current,
+        "self_update_allowed": official_self_update_allowed(),
+        "update_url": get_profile()["repository_url"],
         "latest_version": latest,
         "latest_any": latest_any,
         "latest_stable": latest_stable,
@@ -148,7 +158,7 @@ def _build_status(
     current = get_local_version()
     if latest_any is None:
         latest_any = latest
-    if latest_any is None and error is None:
+    if official_self_update_allowed() and latest_any is None and error is None:
         info = fetch_pypi_info()
         if info is not None:
             latest_any = info.version
@@ -187,7 +197,7 @@ def _resolve_upgrade_target(
     return _channel_latest(latest_any, latest_stable, include_prerelease=not stable_only)
 
 
-@router.get("/status")
+@router.get("/status", summary="Get update status")
 async def update_status(
     _: Any = Depends(current_user),
     server: Any = Depends(get_server),
@@ -204,12 +214,14 @@ async def update_status(
     )
 
 
-@router.post("/check")
+@router.post("/check", summary="Check distribution updates")
 async def check_for_updates(
     _: Any = Depends(require_permission("update")),
     server: Any = Depends(get_server),
 ) -> dict[str, Any]:
     stable_only = _read_stable_only(server)
+    if not official_self_update_allowed():
+        return await asyncio.to_thread(_build_status, stable_only=stable_only)
     pypi_info = await asyncio.to_thread(fetch_pypi_info)
     if pypi_info is None:
         return await asyncio.to_thread(
@@ -321,13 +333,20 @@ async def _upgrade_worker(
     )
 
 
-@router.post("/upgrade", summary="Upgrade Octop")
+@router.post("/upgrade", summary=f"Upgrade {brand_name()}")
 async def trigger_upgrade(
     request: Request,
     body: UpgradeBody = Body(default_factory=UpgradeBody),
     server: Any = Depends(get_server),
     _: Any = Depends(require_permission("update")),
 ) -> dict[str, Any]:
+    if not official_self_update_allowed():
+        raise brand_update_error(
+            resolve_locale(
+                user_locale=getattr(_, "locale", None),
+                explicit=resolve_request_locale(request),
+            )
+        )
     if get_editable_path() is not None:
         raise OctopError(
             ErrorCode.FORBIDDEN,

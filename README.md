@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-banner.png" alt="Octop Banner" width="600" />
+  <img src="docs/assets/readme-banner.png" alt="HiveWork · 蜂巢智工 Logo" width="600" />
 </p>
 
 <p align="center">

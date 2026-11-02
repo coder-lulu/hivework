@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
-# Octop — 可选的源码镜像（飞牛 FPK 不使用本文件）
+# HiveWork — 可选的源码镜像（飞牛 FPK 不使用本文件）
 #
 # 飞牛 Docker 版安装包复用 docker-publish 推送的
-# ghcr.io/tencentcloud/octop:{version}，那份镜像由 docker/Dockerfile 构建。
+# ghcr.io/coder-lulu/hivework:{version}，那份镜像由 docker/Dockerfile 构建。
 # 本文件只在显式执行下面的命令时使用，构建上下文为仓库根目录：
-#   docker build -f fnos/docker/Dockerfile -t octop:fnos-source .
+#   docker build -f fnos/docker/Dockerfile -t hivework:fnos-source .
 #
 # 与上游相比保留 desktop，并同样打进本地知识库运行时：
 #   - desktop          （mss / pynput / pillow，桌面控制附加组件）
@@ -39,6 +39,8 @@ RUN --mount=type=cache,target=/root/.npm \
     && npm ci --prefer-offline --no-audit
 
 COPY dashboard/ ./
+# Vite reads the shared HiveWork brand profile relative to dashboard/.
+COPY src/octop/branding/ ../src/octop/branding/
 
 RUN mkdir -p ../src/octop/dashboard
 RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npx vite build
@@ -48,10 +50,10 @@ RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-LABEL maintainer="TencentCloud"
-LABEL org.opencontainers.image.title="Octop"
-LABEL org.opencontainers.image.description="Smarter self-hosted AI assistant — multi-user, multi-agent (FnOS build with all addons)."
-LABEL org.opencontainers.image.source="https://github.com/TencentCloud/Octop"
+LABEL maintainer="HiveWork"
+LABEL org.opencontainers.image.title="HiveWork"
+LABEL org.opencontainers.image.description="HiveWork (蜂巢智工) — self-hosted multi-user, multi-agent (FnOS build with all addons)."
+LABEL org.opencontainers.image.source="https://github.com/coder-lulu/hivework"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -103,7 +105,13 @@ COPY --from=frontend-builder /build/src/octop/dashboard/ ./src/octop/dashboard/
 
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY docker/bake-desktop.sh /usr/local/bin/bake-desktop.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/bake-desktop.sh
+COPY docker/hivework-tools.sh /etc/profile.d/hivework-tools.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && sed -i 's/\r$//' /etc/profile.d/hivework-tools.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/bake-desktop.sh \
+    && find /app/src -type f -name '*.sh' -exec sed -i 's/\r$//' {} + \
+    && find /app/src/octop/infra/control/desktop/scripts -type f -name '*.sh' \
+        -exec bash -c 'for script; do bash -n "$script" || exit 1; done' _ {} +
 
 # 安装项目与附加组件。虚拟桌面和系统 Chromium 由后面的 bake-desktop.sh 装入，
 # 不会启动。local-embedding / knowledge-ocr 与 desktop 一起装进镜像层，避免运行时
@@ -116,6 +124,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
        UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
        UV_INSECURE_HOST=mirrors.aliyun.com \
        uv pip install --python /app/.venv ".[desktop,local-embedding,knowledge-ocr]" \
+    && /app/.venv/bin/python -m ensurepip --upgrade --default-pip \
     && /app/.venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, pynput, rapidocr, onnxruntime, pymupdf" \
     && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk \
     && apt-get purge -y --auto-remove build-essential \
@@ -124,7 +133,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Packages only. Xvnc stays stopped until the user enables the desktop.
 RUN bash /usr/local/bin/bake-desktop.sh
 
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="/app/.venv/bin:/data/.local/bin:/data/.skillhub/bin:$PATH" \
+    NPM_CONFIG_PREFIX=/data/.local \
     PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 RUN mkdir -p /data/.octop

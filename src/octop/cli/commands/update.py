@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import click
 
+from octop.branding import brand_name
 from octop.cli.support.db import resolve_cli_locale
 from octop.infra.setup.self_update import (
+    brand_update_error,
     fetch_pypi_info,
     get_editable_path,
     get_local_version,
     is_newer,
     is_prerelease,
+    official_self_update_allowed,
     resolve_venv_python,
     run_upgrade,
 )
 
 
-@click.command("update")
+@click.command("update", help=f"Show upgrade guidance for {brand_name()}.")
 @click.option("--check", is_flag=True, default=False, help="Only check, do not install.")
 @click.option("--yes", "-y", is_flag=True, default=False, help="Skip confirmation.")
 @click.option("--verbose", "-v", is_flag=True, default=False, help="Verbose installer output.")
@@ -29,6 +32,11 @@ from octop.infra.setup.self_update import (
 )
 def update(check: bool, yes: bool, verbose: bool, allow_prerelease: bool) -> None:
     """Check for and install a newer Octop release."""
+    if not official_self_update_allowed():
+        click.echo(brand_update_error(resolve_cli_locale()).message, err=not check)
+        if not check:
+            raise SystemExit(1)
+        return
     current = get_local_version()
     info = fetch_pypi_info()
     click.echo(f"installed: {current}")

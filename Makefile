@@ -128,6 +128,7 @@ build-wheel:
 
 .PHONY: publish
 publish: build
+	@$(PYTHON) -c "import json, sys; from pathlib import Path; p=Path('src/octop/branding/profile.json'); sys.exit('HiveWork must not publish the upstream octop package; use the HiveWork artifact workflow.' if p.exists() and json.loads(p.read_text(encoding='utf-8')).get('id') == 'hivework' else 0)"
 	@echo "[publish] Uploading to $(PYPI_REPO)..."
 	@if ! command -v twine > /dev/null 2>&1; then \
 		echo "[publish] twine not found. Installing..."; \

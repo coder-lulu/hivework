@@ -1,0 +1,220 @@
+{
+  "app": {
+    "pageTitle": "蜂巢智工 - 懂你、帮你、陪你成长的智能伙伴"
+  },
+  "common": {
+    "askOctopHint": "若安装失败，可复制下方错误信息发给蜂巢智工排查。"
+  },
+  "apiErrors": {
+    "BACKUP_SCHEMA_INCOMPATIBLE": "该备份使用数据库结构版本 {{archive_schema_version}}，当前蜂巢智工版本无法恢复（最高支持版本：{{runtime_schema_version}}）。",
+    "CONNECTOR_OAUTH_HTTPS_REQUIRED": "当前通过公网 HTTP 访问蜂巢智工，MCP OAuth 授权回调地址需要 HTTPS。请改用 HTTPS，或通过 localhost、127.0.0.1 在本机访问蜂巢智工。",
+    "BRIDGE_AUTH_FAILED": "对端蜂巢智工拒绝了登录凭证。请核对地址、用户名和密码；也可先点「探测」验证账号是否可用。",
+    "BRIDGE_PEER_UNREACHABLE": "无法连接对端蜂巢智工实例。请确认：地址可访问、账号密码正确，且对端已升级到支持云端协同的版本（需开放 /api/bridge/ws）。若对端在内网，需由可达的一侧主动发起连接。",
+    "BRIDGE_REMOTE_UNSUPPORTED": "对端暂不支持此操作，请在对端蜂巢智工上管理。",
+    "BRIDGE_SELF_CONNECT": "不能把本机蜂巢智工添加为自己的对端。",
+    "SSO_IDENTITY_TAKEN": "该登录身份已绑定到其他蜂巢智工账号。",
+    "LDAP_USER_NOT_PROVISIONED": "该目录账号尚未创建蜂巢智工账号。请联系管理员创建，或开启自动创建账号。",
+    "LOCAL_DOWNLOAD_UNAVAILABLE": "仅在本机打开蜂巢智工时才能保存到系统「下载」文件夹。",
+    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "容器环境下不能设置「允许的存储根目录」。"
+  },
+  "setupWizard": {
+    "subtitle": "欢迎使用蜂巢智工",
+    "migrate": {
+      "desc": "检测到 OpenClaw 配置文件，可将模型配置、通道配置、工作区文件和技能一键迁移到蜂巢智工。",
+      "channelMigrationWarning": "迁移通道配置后，同一通道将同时连接 OpenClaw 与蜂巢智工两个专家，消息可能被两个专家分别回复，导致回复冲突或重复。建议仅在停用 OpenClaw 或确实需要双专家运行的场景下勾选该项。"
+    },
+    "browser": {
+      "desc": "蜂巢智工通过浏览器自动化帮你浏览网页、填写表单、截图、提取信息和完成各种在线操作，全程无需手动干预。这些功能需要一个 Chromium 内核浏览器。",
+      "installFailedHint": "自动安装失败，可重试、手动执行下方命令，或复制错误信息发给蜂巢智工排查。国内网络不稳定时，可在环境变量中设置 PLAYWRIGHT_DOWNLOAD_HOST 指定镜像源后重试。"
+    }
+  },
+  "experts": {
+    "marketBackendMissing": "后端还没有加载专家市场接口，请重启蜂巢智工后端或确认当前运行的是这份新代码。",
+    "rootDirProbe": {
+      "permission_denied": "蜂巢智工服务对该目录没有完整的读、写、执行权限。"
+    }
+  },
+  "chat": {
+    "remoteExpert": {
+      "manageToast": "当前是对端专家，技能 / 模型 / 知识库等请在对端蜂巢智工上管理",
+      "editBanner": "正在编辑对端专家，改动会保存到对端蜂巢智工。",
+      "peerOnlyAcp": "这里的 ACP 运行器属于本机蜂巢智工。要开关对端专家的 ACP 工具，请打开该专家的「工具」页签。",
+      "editPlugins": "此处只能开关对端已安装的插件；安装、卸载和市场请在对端进行。"
+    }
+  },
+  "skills": {
+    "octop-assistant": "蜂巢智工助手",
+    "octop_assistant": "蜂巢智工助手"
+  },
+  "cronJobs": {
+    "form": {
+      "sessionKeyTooltip": "蜂巢智工 session_key，决定任务在哪个频道/会话中执行并投递结果。"
+    }
+  },
+  "channels": {
+    "dingtalkQrIntro3": "蜂巢智工将自动创建并启用钉钉频道"
+  },
+  "tls": {
+    "restartRequired": "证书已安装。请重启蜂巢智工以在 443 启用 HTTPS（80 端口将保留用于续期）。",
+    "subtitle": "当服务监听 0.0.0.0:80 且域名已指向公网时，可申请免费 TLS 证书。签发后 HTTPS 走 443，HTTP 80 保留用于 ACME 续期。"
+  },
+  "advancedSettings": {
+    "bridge": {
+      "description": "将本机蜂巢智工连接到另一实例。可浏览对端专家并跨实例对话；对话记录保留在专家所在侧。",
+      "emptyDesc": "填写对端蜂巢智工地址、用户名和密码后即可添加。",
+      "probeFailed": "无法探测对端蜂巢智工",
+      "peerUrlRequired": "请输入对端蜂巢智工地址",
+      "directionHint": "请从能访问到对端的一侧发起。通常由内网或本机去连公网/云端。探测成功只说明账号可用，还需要握手成功才会保存。"
+    },
+    "update": {
+      "description": "检查最新版本，一键升级蜂巢智工；右侧可按安装方式查看完整升级说明。",
+      "restartHint": "请重启蜂巢智工使更新生效。",
+      "guide": {
+        "restart": {
+          "body": "包更新完成后需要重启进程才生效。任选与你的启动方式匹配的命令："
+        }
+      }
+    },
+    "search": {
+      "sourceBuiltinDesc": "未配置第三方搜索服务时，仍可使用产品内置搜索服务；该服务无需 API Key，但不保证稳定性和可用性。配置第三方服务后会自动切换。"
+    }
+  },
+  "proactiveConfig": {
+    "description": "让蜂巢智工定期回顾记忆，在合适的时机主动找你说话。",
+    "enabledTip": "开启后，蜂巢智工会定期翻看记忆，遇到值得提醒的事会主动给你发消息。",
+    "everyTip": "蜂巢智工检查记忆的频率，支持 30m、1h、2h30m 这类格式。",
+    "episodeBannerText": "蜂巢智工会从你的情绪日记中挑选合适的时机，主动发来一句关心。你可以在「情绪日记」中查看哪些记录会被参考。"
+  },
+  "memory": {
+    "description": "查看蜂巢智工记下的重点：来源、内容，以及待处理的记忆草稿。",
+    "conversationHistoryDesc": "按会话查看你与蜂巢智工的完整对话。",
+    "noConversations": "还没有对话记录，先和蜂巢智工聊几句吧",
+    "conversationRole": {
+      "assistant": "蜂巢智工"
+    },
+    "longTermMemoryDesc": "蜂巢智工长期保留的关键内容。",
+    "noAgentSelected": "请先在顶部选择一个蜂巢智工",
+    "terminal": {
+      "toldMeDesc": "最近被蜂巢智工记下的关键内容",
+      "emptyAboutMe": "蜂巢智工还在了解你，多聊几次就会补上"
+    },
+    "edit": {
+      "description": "保存后蜂巢智工会使用新内容；原来的记录会留在变更历史里。"
+    },
+    "deprecate": {
+      "description": "弃用后蜂巢智工将不再使用这条记忆。如果是记录有误，建议先描述正确内容作为弃用原因。",
+      "success": "已弃用，蜂巢智工将不再使用这条记忆"
+    },
+    "episodes": {
+      "disclaimer": "这里记录你与蜂巢智工相处中的情绪和小故事。它不会用于常规对话引用，只会帮蜂巢智工更好地关心你，并用于周 / 月小结。"
+    },
+    "migrate": {
+      "exportDesc": "将当前蜂巢智工的全部记忆打包为 .hmpkg 文件并下载到本地。你可以在其他宿主（openclaw / hermes）上导入此文件继续使用。",
+      "doctorDesc": "对当前蜂巢智工的记忆库执行健康检查，验证 schema、索引、外键完整性等。"
+    },
+    "overview": {
+      "profileSubtitle": "AI 当前对你的结构化理解，只展示高价值结论，并非完整记忆库。"
+    }
+  },
+  "remoteBrowser": {
+    "installFailedHint": "自动安装失败。请复制下方错误信息发给蜂巢智工排查，或配置 PLAYWRIGHT_DOWNLOAD_HOST 镜像源后重试。",
+    "notInstalledHint": "蜂巢智工需要浏览器才能帮你自动打开网页、填写表单和截图。点击下方按钮即可自动安装，无需手动配置。",
+    "uninstallConfirm": "将关闭当前浏览器窗口，并卸载蜂巢智工自动安装的浏览器。你电脑上已有的 Chrome 等浏览器不受影响。",
+    "envReady": "可以帮你打开网页、填写表单和截图了"
+  },
+  "remoteDesktop": {
+    "subtitle": "控制蜂巢智工主机操作系统桌面",
+    "installFailedHint": "安装未完成。请复制下方错误信息发给蜂巢智工排查后重试。",
+    "macPermissionsDesc": "请在「系统设置 → 隐私与安全性」中，为运行蜂巢智工的终端（或 Cursor / Terminal）开启「{{permissions}}」，然后重启蜂巢智工，再点「重新检测」。",
+    "macPermStep2": "在「{{permissions}}」中勾选运行蜂巢智工的终端或应用",
+    "macPermStep3": "重启蜂巢智工（octop run），再回到本页点击「重新检测」",
+    "connectDisabledPerms": "请先在系统设置中开启屏幕录制与辅助功能权限，然后重启蜂巢智工"
+  },
+  "wizard": {
+    "database": {
+      "hint": "选择蜂巢智工控制面数据（用户、专家、频道等）的存储位置。大多数安装使用默认的本地 SQLite 即可。",
+      "sqlitePathHint": "默认保存在蜂巢智工数据目录下的本地数据库文件。"
+    },
+    "password": {
+      "wherePath": "在服务器上打开 {{path}}，或查看启动蜂巢智工时终端里黄色边框的输出。",
+      "whereDefault": "在服务器上打开 ~/hivework-login.txt，或查看启动蜂巢智工时终端里黄色边框的输出。",
+      "hint": "首次启动时，服务端会在控制台打印一次性引导密码，并写入下方路径所示文件。"
+    }
+  },
+  "storage": {
+    "dockerEnv": {
+      "autoDescUnavailable": "当前环境可能无法自动安装（非 Linux 或缺少免密 sudo）。仍可点「尝试安装」探测；失败时请用下方手动或蜂巢智工方式。",
+      "sectionOctop": "3. 蜂巢智工安装",
+      "octopDesc": "将下列提示词复制到蜂巢智工对话，让专家协助安装与验证。",
+      "copiedPrompt": "提示词已复制，可粘贴到蜂巢智工对话",
+      "autoDescReady": "当前环境支持无密码 sudo，可尝试通过包管理器自动安装 Docker。"
+    }
+  },
+  "login": {
+    "forgotPasswordHelp": "请联系管理员在「用户」页重置。若你维护本机，在安装了蜂巢智工的电脑上，用运行服务的同一账户执行：",
+    "oidcError": {
+      "identity_taken": "该登录身份已绑定到其他蜂巢智工账号。"
+    }
+  },
+  "invite": {
+    "subtitle": "输入邀请码，创建账号，即可开始使用蜂巢智工。"
+  },
+  "adminSso": {
+    "wecomRedirectDocs": "在企业微信 → 应用 → Web 网页：将「授权回调域」设为下方主机名（如 localhost 或 octop.example.com）。不要填写 http:// 或 /api/…。蜂巢智工实际仍会跳转到完整回调 URL。",
+    "callbackFullUriHint": "蜂巢智工使用的完整回调地址（仅供对照）：",
+    "ldap": {
+      "sectionServerHint": "蜂巢智工连接此服务器完成用户认证。",
+      "sectionBindHint": "蜂巢智工用于检索目录的账号。",
+      "sectionSearchHint": "蜂巢智工依据登录页输入的用户名查找对应的目录账号。",
+      "sectionAttributesHint": "目录属性与蜂巢智工账号字段的对应关系。",
+      "adminGroupsHint": "这些组的成员在蜂巢智工中获得管理员角色 —— 仅首次创建账号时判定，之后改目录组不会重新套用到已有账号。建议填完整 DN；只填 CN 会匹配到任意 OU 下的同名组。",
+      "autoProvisionHint": "关闭后，仅已存在的蜂巢智工用户可通过目录登录。",
+      "adminGroupsOnceBody": "之后把用户加入管理员组不会提权，移出也不会降权。需要调整请在蜂巢智工用户列表中修改角色。",
+      "warning": {
+        "no_admin_groups": "未配置管理员组，首次登录时不会有目录用户成为蜂巢智工管理员。",
+        "auto_provision_open": "已开启自动创建账号且未设置允许登录组：过滤条件命中的任何账号都会在蜂巢智工建号。",
+        "identity_key_is_dn": "开启了自动创建账号但未设置身份主键：新账号会绑定到条目 DN，目录里改名或换 OU 会产生第二个蜂巢智工账号。"
+      }
+    }
+  },
+  "connectors": {
+    "cliMissingHint": "主机尚未安装 CLI。可点击「安装 CLI」，或在蜂巢智工主机终端手动执行下方命令。",
+    "customMcp": {
+      "probeOnSaveHint": "将向您填写的 MCP 地址发起请求以验证可用性；若需登录，会引导您完成 OAuth。"
+    },
+    "weknoraNotFound": "未在蜂巢智工主机的 127.0.0.1:8080 检测到 WeKnora"
+  },
+  "acp": {
+    "intro_opencode": "开源 AI 编程专家，通过 stdio ACP 与蜂巢智工协作。"
+  },
+  "plugins": {
+    "guideImportBody": "把 .zip 放到蜂巢智工可通过 HTTP(S) 下载的位置，优先使用 raw 直链。安装后前往「个性化 → 插件」为专家配置。本地 demo：octop plugin install ./plugins/demo-toolkit --force"
+  },
+  "pageShell": {
+    "bridge": {
+      "subtitle": "连接另一台蜂巢智工，在本机浏览对端专家并跨实例对话"
+    },
+    "desktop": {
+      "subtitle": "查看并操控蜂巢智工主机操作系统桌面，远程完成桌面操作"
+    }
+  },
+  "errors": {
+    "offlineTitle": "无法连接蜂巢智工服务"
+  },
+  "pwa": {
+    "installAsAppDesc": "将蜂巢智工安装为 App，随时一键打开。",
+    "desktopStep2": "或打开浏览器菜单，选择「{{action}} 蜂巢智工」/ Install 蜂巢智工",
+    "desktopHint": "通过局域网 IP 访问时需使用 HTTPS，否则浏览器不会提供安装选项。"
+  },
+  "brand": {
+    "name": "蜂巢智工",
+    "mascot": "蜂巢智工吉祥物",
+    "candidateTitle": "蜂巢智工的建议",
+    "candidateHint": "这些草稿由蜂巢智工从对话中自动提取，正在等待系统规则判断。",
+    "updateTitle": "蜂巢智工更新",
+    "updateDescription": "请通过蜂巢智工部署渠道更新。官方 Octop 安装包不包含此定制版本。",
+    "updateSource": "源码部署请按蜂巢智工安装与升级指南操作，升级前备份数据，完成后重启服务。",
+    "updateGuide": "安装与升级指南",
+    "releases": "蜂巢智工发行版本"
+  }
+}

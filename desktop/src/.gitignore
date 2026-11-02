@@ -8,4 +8,5 @@ build/windows/icon.ico
 build/windows/info.generated.json
 build/windows/wails.exe.generated.manifest
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+build/windows/nsis/version_defines.nsh
 build/linux/icon.png

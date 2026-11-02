@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HiveWork · 服务器设置</title>
+    <style>
+      :root {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #111827;
+        background: #f5f6f8;
+        color-scheme: light;
+        font-size: 14px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 32px 24px;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      main {
+        width: min(100%, 560px);
+        padding: 32px;
+        border: 1px solid #dfe3eb;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      }
+      header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .brand {
+        height: 48px;
+        max-width: 100%;
+        object-fit: contain;
+        margin: 4px 0 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.4;
+        font-weight: 600;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      p {
+        color: #94a3b8;
+        line-height: 1.6;
+        font-size: 13px;
+      }
+      header p {
+        margin: 12px 0 0;
+      }
+      section {
+        margin-top: 24px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #475569;
+      }
+      input,
+      select {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #dfe3eb;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+        color: inherit;
+        background: #fff;
+      }
+      input::placeholder {
+        color: #94a3b8;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid #dbe3fe;
+        border-color: #3a5fe0;
+      }
+      button {
+        min-height: 36px;
+        cursor: pointer;
+        border: 1px solid #dfe3eb;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font: inherit;
+        font-weight: 500;
+        color: #475569;
+        background: #fff;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      button.primary {
+        color: #fff;
+        border-color: #3a5fe0;
+        background: #3a5fe0;
+        min-height: 44px;
+      }
+      button.primary:hover:not(:disabled) {
+        background: #2e4fd4;
+        border-color: #2e4fd4;
+      }
+      button:hover:not(:disabled) {
+        color: #3a5fe0;
+        border-color: #3a5fe0;
+        background: #f1f4ff;
+      }
+      button.primary:hover:not(:disabled) {
+        color: #fff;
+      }
+      button:focus-visible {
+        outline: 2px solid #3a5fe0;
+        outline-offset: 3px;
+      }
+      button:disabled,
+      input:disabled,
+      select:disabled {
+        cursor: default;
+        opacity: 0.55;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .row select {
+        flex: 1;
+        min-width: 0;
+      }
+      .row button {
+        flex-shrink: 0;
+      }
+      .fields {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .mode-options {
+        display: grid;
+        gap: 14px;
+      }
+      .mode-card {
+        width: 100%;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        text-align: left;
+        padding: 20px;
+        border-radius: 12px;
+      }
+      .mode-icon {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        background: #f1f4ff;
+        color: #3a5fe0;
+        border-radius: 10px;
+      }
+      .mode-icon svg {
+        width: 24px;
+        height: 24px;
+      }
+      .mode-card strong {
+        display: block;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .mode-card small {
+        display: block;
+        margin-top: 6px;
+        color: #94a3b8;
+        line-height: 1.5;
+        font-size: 13px;
+        font-weight: 400;
+      }
+      .mode-arrow {
+        margin-left: auto;
+        color: #94a3b8;
+        font-size: 22px;
+      }
+      #back {
+        border: 0;
+        padding: 0;
+        margin-bottom: 16px;
+        background: transparent;
+        min-height: 28px;
+      }
+      #startup-title,
+      #startup-hint {
+        display: none;
+      }
+      #data-hint,
+      #default-hint {
+        margin: 16px 0 0;
+        font-size: 12px;
+      }
+      #current,
+      #default-server {
+        font-size: 12px;
+        margin: 6px 0;
+        overflow-wrap: anywhere;
+      }
+      #saved-section {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 16px;
+      }
+      details {
+        margin-top: 20px;
+      }
+      summary {
+        cursor: pointer;
+        color: #475569;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 4px 0;
+      }
+      summary:focus-visible {
+        outline: 2px solid #3a5fe0;
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      details[open] > summary:not([hidden]) {
+        margin-bottom: 16px;
+      }
+      .server {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .server-info {
+        min-width: 0;
+      }
+      .server-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .server-url {
+        color: #94a3b8;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+        margin-top: 4px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+      #save {
+        flex: 1;
+      }
+      #refresh {
+        margin-top: 12px;
+      }
+      #notice {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #15803d;
+        background: #f0fdf4;
+        padding: 12px;
+        border-radius: 10px;
+      }
+      #notice.error,
+      #recovery {
+        color: #b91c1c;
+        background: #fef2f2;
+        padding: 16px;
+        border-radius: 10px;
+      }
+      #connection-error {
+        color: #b91c1c;
+        overflow-wrap: anywhere;
+      }
+      #progress {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        color: #3a5fe0;
+        background: #f1f4ff;
+        border-radius: 10px;
+        padding: 14px;
+        margin-top: 20px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #dbe3fe;
+        border-top-color: #3a5fe0;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      [hidden] {
+        display: none !important;
+      }
+      @media (max-width: 480px) {
+        body {
+          padding: 16px;
+        }
+        main {
+          padding: 24px;
+        }
+        .row,
+        .server {
+          align-items: stretch;
+          flex-direction: column;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+        button {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <button id="back" type="button" hidden></button>
+      <header>
+        <img class="brand" src="/hivework-logo.png" alt="HiveWork" />
+        <h1 id="title">选择运行模式</h1>
+        <p id="hint"></p>
+      </header>
+      <section id="startup">
+        <h2 id="startup-title"></h2>
+        <p id="startup-hint"></p>
+        <div class="mode-options">
+          <button type="button" class="mode-card" id="choose-remote">
+            <span class="mode-icon"
+              ><svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="7" rx="2" />
+                <rect x="3" y="14" width="18" height="7" rx="2" />
+                <path d="M7 6.5h.01M7 17.5h.01M11 6.5h6M11 17.5h6" /></svg
+            ></span>
+            <span
+              ><strong id="remote-label"></strong
+              ><small id="remote-description"></small></span
+            ><span class="mode-arrow" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="mode-card" id="choose-local">
+            <span class="mode-icon"
+              ><svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="13" rx="2" />
+                <path d="M8 21h8M12 16v5" /></svg
+            ></span>
+            <span
+              ><strong id="local-label"></strong
+              ><small id="local-description"></small></span
+            ><span class="mode-arrow" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+      <div id="progress" role="status" hidden>
+        <span class="spinner" aria-hidden="true"></span
+        ><span id="progress-label"></span>
+      </div>
+      <section id="recovery" hidden>
+        <h2 id="recovery-title"></h2>
+        <p id="connection-error" role="alert"></p>
+        <div class="actions">
+          <button type="button" id="retry"></button
+          ><button type="button" id="switch-server"></button
+          ><button type="button" id="temporary-local"></button>
+        </div>
+      </section>
+      <div id="remote-view" hidden>
+        <p id="current" role="status"></p>
+        <p id="default-server"></p>
+        <section id="server-selection">
+          <label for="server-choice" id="choice-label"></label>
+          <div class="row">
+            <select id="server-choice"></select
+            ><button type="button" class="primary" id="connect"></button>
+          </div>
+        </section>
+        <details id="editor">
+          <summary id="form-title"></summary>
+          <form id="server-form">
+            <div class="fields">
+              <div>
+                <label for="server-url" id="url-label"></label
+                ><input
+                  id="server-url"
+                  required
+                  placeholder="https://work.example.com"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
+              <div>
+                <label for="server-name" id="name-label"></label
+                ><input id="server-name" autocomplete="off" />
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit" class="primary" id="save"></button
+              ><button type="button" id="save-only"></button
+              ><button type="button" id="cancel-edit" hidden></button>
+            </div>
+          </form>
+        </details>
+        <p id="default-hint"></p>
+        <details id="saved-section">
+          <summary id="saved-title"></summary>
+          <div id="servers"></div>
+          <button type="button" id="refresh"></button>
+        </details>
+      </div>
+      <p id="data-hint"></p>
+      <p id="notice" role="status" hidden></p>
+    </main>
+    <script type="module">
+      import { Call, Events } from "/wails/runtime.js";
+      const copy = {
+        zh: {
+          title: "连接远程服务器",
+          back: "‹ 运行模式",
+          remoteDescription: "连接已部署的服务，使用团队共享的工作空间",
+          localDescription: "在此电脑启动服务，数据保存在本地",
+          saveOnly: "仅保存",
+          hint: "添加多个服务器地址，列表会自动保存在此电脑。",
+          current: "当前连接：",
+          defaultServer: "已保存的默认选择：",
+          noDefault: "尚未选择",
+          modeHint: "自动记住本次选择。本地与远程服务器的账号和数据相互独立。",
+          startupTitle: "选择运行模式",
+          startupHint:
+            "已有远程部署，请连接已有服务器；也可以在此电脑使用本地服务。",
+          chooseRemote: "远程服务器",
+          chooseLocal: "本地模式",
+          recoveryTitle: "连接未成功",
+          retry: "重试",
+          switchServer: "切换服务器",
+          temporaryLocal: "临时使用本地",
+          dataHint:
+            "本地与各远程服务器的账号、数据和工作区相互独立。临时使用本地不会更改默认服务器。",
+          disconnected: "尚未连接",
+          choice: "选择服务器",
+          local: "本地服务（此电脑）",
+          connect: "连接并设为默认",
+          defaultHint: "连接成功后，下次启动将自动使用该服务器。",
+          add: "添加服务器",
+          edit: "编辑服务器",
+          name: "名称（可选）",
+          url: "服务器地址",
+          save: "保存并连接",
+          update: "保存并连接",
+          cancel: "取消编辑",
+          saved: "已保存的服务器",
+          empty: "尚未添加服务器。",
+          editButton: "编辑",
+          deleteButton: "删除",
+          default: "默认",
+          refresh: "刷新列表",
+          savedNotice: "服务器列表已保存。",
+          connecting: "正在连接，请稍候…",
+          inUse: "先将其他服务器或本地服务设为默认，再删除此地址。",
+          error: "操作失败，请重试。",
+        },
+        en: {
+          title: "Connect to a server",
+          back: "‹ Run mode",
+          remoteDescription: "Connect to your deployment and shared workspace",
+          localDescription: "Run the service and store data on this computer",
+          saveOnly: "Save only",
+          hint: "Add multiple servers. The list is saved automatically on this computer.",
+          current: "Connected to: ",
+          defaultServer: "Saved default: ",
+          noDefault: "Not selected",
+          modeHint:
+            "Your choice is remembered. Local and remote accounts and data are separate.",
+          startupTitle: "Choose how to connect",
+          startupHint:
+            "Connect to your existing server, or use the local service on this computer.",
+          chooseRemote: "Remote server",
+          chooseLocal: "Local mode",
+          recoveryTitle: "Connection unsuccessful",
+          retry: "Retry",
+          switchServer: "Switch server",
+          temporaryLocal: "Use local temporarily",
+          dataHint:
+            "Accounts, data, and workspaces are separate on each server and this computer. Using local temporarily keeps your default server unchanged.",
+          disconnected: "Not connected",
+          choice: "Choose a server",
+          local: "Local service (this computer)",
+          connect: "Connect and remember",
+          defaultHint:
+            "After a successful connection, this server will be used on the next launch.",
+          add: "Add server",
+          edit: "Edit server",
+          name: "Name (optional)",
+          url: "Server address",
+          save: "Save and connect",
+          update: "Save and connect",
+          cancel: "Cancel editing",
+          saved: "Saved servers",
+          empty: "No servers added yet.",
+          editButton: "Edit",
+          deleteButton: "Delete",
+          default: "Default",
+          refresh: "Refresh list",
+          savedNotice: "Server list saved.",
+          connecting: "Connecting, please wait…",
+          inUse:
+            "Set another server or the local service as default before deleting this default address.",
+          error: "The operation failed. Please try again.",
+        },
+      };
+      let state = {
+        servers: [],
+        activeUrl: null,
+        currentUrl: "",
+        locale: "zh",
+        connectionPhase: "choose",
+        connectionError: "",
+      };
+      let view = null;
+      let connecting = false;
+      let editing = "";
+      let editorInitialized = false;
+      let selection = null;
+      let busy = false;
+      let pendingRefresh = false;
+      const el = (id) => document.getElementById(id);
+      const text = () => copy[state.locale] || copy.en;
+      const call = (name, ...args) => Call.ByName("main.App." + name, ...args);
+      function notice(message, error = false) {
+        el("notice").textContent = message;
+        el("notice").classList.toggle("error", error);
+        el("notice").hidden = !message;
+      }
+      function setBusy(value) {
+        busy = value;
+        el("progress").hidden =
+          !connecting && state.connectionPhase !== "connecting";
+        document.querySelectorAll("button, input, select").forEach((node) => {
+          node.disabled = value || node.dataset.locked === "true";
+        });
+      }
+      function finishOperation() {
+        setBusy(false);
+        if (pendingRefresh) {
+          pendingRefresh = false;
+          void refresh();
+        }
+      }
+      function resetForm() {
+        editing = "";
+        el("server-form").reset();
+        delete el("server-url").dataset.locked;
+        el("server-url").disabled = busy;
+        el("form-title").textContent = text().add;
+        el("save").textContent = text().save;
+        el("cancel-edit").hidden = true;
+      }
+      function render(next, placeholder = false) {
+        state = next;
+        const t = text();
+        document.documentElement.lang = state.locale;
+        for (const [id, key] of Object.entries({
+          title: "title",
+          hint: "hint",
+          "choice-label": "choice",
+          connect: "connect",
+          "default-hint": "defaultHint",
+          "name-label": "name",
+          "url-label": "url",
+          "saved-title": "saved",
+          "cancel-edit": "cancel",
+          refresh: "refresh",
+          "startup-title": "startupTitle",
+          "startup-hint": "startupHint",
+          "remote-label": "chooseRemote",
+          "local-label": "chooseLocal",
+          "remote-description": "remoteDescription",
+          "local-description": "localDescription",
+          back: "back",
+          "save-only": "saveOnly",
+          "progress-label": "connecting",
+          "recovery-title": "recoveryTitle",
+          retry: "retry",
+          "switch-server": "switchServer",
+          "temporary-local": "temporaryLocal",
+          "data-hint": "dataHint",
+        })) {
+          el(id).textContent = t[key];
+        }
+        el("current").textContent =
+          t.current + (state.currentUrl || t.disconnected);
+        el("current").hidden = !state.currentUrl;
+        el("default-server").hidden = state.activeUrl === null;
+        el("default-server").textContent =
+          t.defaultServer +
+          (state.activeUrl === null ? t.noDefault : state.activeUrl || t.local);
+        if (view === null)
+          view = state.connectionPhase === "choose" ? "mode" : "remote";
+        el("startup").hidden = view !== "mode";
+        el("remote-view").hidden = view !== "remote";
+        el("back").hidden = view === "mode";
+        el("title").textContent = view === "mode" ? t.startupTitle : t.title;
+        document.title = "HiveWork · " + el("title").textContent;
+        el("hint").textContent = view === "mode" ? t.startupHint : t.hint;
+        el("data-hint").textContent = view === "mode" ? t.modeHint : t.dataHint;
+        el("server-selection").hidden = !state.servers.length;
+        el("saved-section").hidden = !state.servers.length;
+        el("form-title").textContent = editing ? t.edit : t.add;
+        el("form-title").hidden = !state.servers.length;
+        if (!placeholder && !editorInitialized) {
+          el("editor").open = !state.servers.length;
+          editorInitialized = true;
+        }
+        if (!state.servers.length) el("editor").open = true;
+        el("save").textContent = editing ? t.update : t.save;
+        el("cancel-edit").hidden = !editing;
+        el("recovery").hidden = state.connectionPhase !== "failed";
+        el("connection-error").textContent = state.connectionError || t.error;
+        const select = el("server-choice");
+        select.replaceChildren();
+        for (const server of state.servers) {
+          select.add(new Option(server.name + " · " + server.url, server.url));
+        }
+        const validChoice = (url) => state.servers.some((s) => s.url === url);
+        if (selection !== null && !validChoice(selection)) selection = null;
+        select.value =
+          selection ??
+          (validChoice(state.activeUrl)
+            ? state.activeUrl
+            : validChoice(state.currentUrl)
+            ? state.currentUrl
+            : state.servers[0]?.url || "");
+        const list = el("servers");
+        list.replaceChildren();
+        if (!state.servers.length) {
+          const empty = document.createElement("p");
+          empty.textContent = t.empty;
+          list.append(empty);
+        }
+        for (const server of state.servers) {
+          const row = document.createElement("div");
+          row.className = "server";
+          const info = document.createElement("div");
+          info.className = "server-info";
+          const name = document.createElement("div");
+          name.className = "server-name";
+          name.textContent =
+            server.name +
+            (server.url === state.activeUrl ? " · " + t.default : "");
+          const url = document.createElement("div");
+          url.className = "server-url";
+          url.textContent = server.url;
+          info.append(name, url);
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const edit = document.createElement("button");
+          edit.type = "button";
+          edit.textContent = t.editButton;
+          edit.setAttribute("aria-label", t.editButton + " " + server.name);
+          edit.onclick = () => {
+            editing = server.url;
+            el("editor").open = true;
+            el("server-name").value = server.name;
+            el("server-url").value = server.url;
+            el("server-url").dataset.locked = String(
+              server.url === state.activeUrl,
+            );
+            el("server-url").disabled = server.url === state.activeUrl;
+            el("form-title").textContent = t.edit;
+            el("save").textContent = t.update;
+            el("cancel-edit").hidden = false;
+            el("server-name").focus();
+          };
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = t.deleteButton;
+          remove.setAttribute("aria-label", t.deleteButton + " " + server.name);
+          remove.dataset.locked = String(server.url === state.activeUrl);
+          remove.disabled = server.url === state.activeUrl;
+          if (remove.disabled) remove.title = t.inUse;
+          remove.onclick = () =>
+            run(async () => {
+              const next = await call("DeleteServer", server.url);
+              if (editing === server.url) resetForm();
+              return next;
+            });
+          actions.append(edit, remove);
+          row.append(info, actions);
+          list.append(row);
+        }
+        setBusy(busy);
+      }
+      async function run(operation, connected = false) {
+        if (busy) return;
+        connecting = connected;
+        setBusy(true);
+        notice("");
+        try {
+          render(await operation());
+          notice(connected ? "" : text().savedNotice);
+          if (connected && state.connectionPhase === "connected") {
+            await call("HideServerManager");
+            await call("ShowMain");
+          }
+        } catch (error) {
+          try {
+            render(await call("GetServerConnections"));
+          } catch {
+            // Preserve the original operation error when refresh also fails.
+          }
+          notice(error?.message || String(error) || text().error, true);
+        } finally {
+          connecting = false;
+          finishOperation();
+        }
+      }
+      async function saveServer(connectAfter) {
+        if (!el("server-form").reportValidity()) return;
+        const previousURL = editing;
+        const previousURLs = state.servers.map((server) => server.url);
+        const name = el("server-name").value;
+        const url = el("server-url").value;
+        return run(async () => {
+          const next = await call("SaveServer", previousURL, { name, url });
+          const added = next.servers.find(
+            (server) => !previousURLs.includes(server.url),
+          );
+          if (added) selection = added.url;
+          else if (previousURL) selection = previousURL;
+          if (connectAfter) {
+            // A failed probe must leave the saved profile editable and retryable.
+            if (added) editing = added.url;
+            const result = await call("ConnectServer", url);
+            selection = result.activeUrl;
+            resetForm();
+            return result;
+          }
+          resetForm();
+          return next;
+        }, connectAfter);
+      }
+      el("server-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        void saveServer(true);
+      });
+      el("save-only").onclick = () => void saveServer(false);
+      el("server-choice").onchange = () => {
+        selection = el("server-choice").value;
+      };
+      el("cancel-edit").onclick = resetForm;
+      el("connect").onclick = () =>
+        run(() => call("ConnectServer", el("server-choice").value), true);
+      el("choose-local").onclick = () =>
+        run(() => call("ConnectServer", ""), true);
+      el("retry").onclick = () =>
+        run(() => call("RetryServerConnection"), true);
+      el("temporary-local").onclick = () =>
+        run(() => call("ConnectLocalTemporarily"), true);
+      const chooseRemote = () => {
+        if (busy) return;
+        view = "remote";
+        render(state);
+        if (state.servers.length) {
+          el("server-choice").value = state.servers.some(
+            (s) => s.url === state.activeUrl,
+          )
+            ? state.activeUrl
+            : state.servers[0].url;
+          selection = el("server-choice").value;
+          el("server-choice").focus();
+        } else {
+          el("server-url").focus();
+        }
+      };
+      el("back").onclick = () => {
+        if (busy) return;
+        view = "mode";
+        notice("");
+        render(state);
+      };
+      el("choose-remote").onclick = chooseRemote;
+      el("switch-server").onclick = chooseRemote;
+      const refresh = async () => {
+        if (busy) {
+          pendingRefresh = true;
+          return;
+        }
+        setBusy(true);
+        try {
+          render(await call("GetServerConnections"));
+        } catch (error) {
+          notice(error?.message || String(error), true);
+        } finally {
+          finishOperation();
+        }
+      };
+      el("refresh").onclick = refresh;
+      Events.On("desktop:connection", (event) => {
+        const update = event?.data;
+        if (!update?.connectionPhase) return;
+        state = {
+          ...state,
+          connectionPhase: update.connectionPhase,
+          connectionError: update.connectionError || "",
+        };
+        el("progress").hidden =
+          !connecting && state.connectionPhase !== "connecting";
+        el("recovery").hidden = state.connectionPhase !== "failed";
+        el("connection-error").textContent =
+          state.connectionError || text().error;
+      });
+      Events.On("desktop:servers:refresh", refresh);
+      render(state, true);
+      view = null;
+      await refresh();
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-# Shared NSIS helpers for the Octop desktop installer.
+# Shared NSIS helpers for the HiveWork desktop installer.
 # INFO_PRODUCTVERSION: display string (pep440 OK, e.g. 1.0.2b1).
 # INFO_FILEVERSION: numeric X.X.X.X for VIProductVersion / VIFileVersion
 # (stamp_version.py four-part). Fallbacks below are for local makensis without -D.
@@ -8,13 +8,13 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "Octop"
+    !define INFO_PROJECTNAME "HiveWork"
 !endif
 !ifndef INFO_COMPANYNAME
     !define INFO_COMPANYNAME "Octop"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "Octop"
+    !define INFO_PRODUCTNAME "HiveWork"
 !endif
 !ifndef INFO_PRODUCTVERSION
     !define INFO_PRODUCTVERSION "0.9.31"
@@ -26,7 +26,8 @@
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"
 !endif
 !ifndef UNINST_KEY_NAME
-    !define UNINST_KEY_NAME "${INFO_COMPANYNAME}${INFO_PRODUCTNAME}"
+    # Keep the existing uninstall entry when upgrading a branded desktop build.
+    !define UNINST_KEY_NAME "OctopOctop"
 !endif
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINST_KEY_NAME}"
 

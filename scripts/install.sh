@@ -593,25 +593,36 @@ _CONSOLE_AVAILABLE=0
 prepare_console() {
     local repo_dir="$1"
     local console_dest="$repo_dir/src/octop/dashboard"
+    local branded=0
+    [ ! -f "$repo_dir/src/octop/branding/profile.json" ] || branded=1
 
-    if [ -f "$console_dest/index.html" ]; then
+    if [ "$branded" -eq 0 ] && [ -f "$console_dest/index.html" ]; then
         _CONSOLE_AVAILABLE=1
         return
     fi
 
     if [ ! -f "$repo_dir/dashboard/package.json" ]; then
+        [ "$branded" -eq 0 ] || die "HiveWork source installation requires dashboard sources."
         warn "Frontend source not found - the Web UI will be unavailable."
         return
     fi
 
     if ! command -v npm &>/dev/null; then
+        [ "$branded" -eq 0 ] || die "HiveWork source installation requires Node.js/npm to rebuild its branded dashboard."
         warn "npm not found - skipping the frontend build."
         warn "Install Node.js and re-run, or build manually: cd dashboard && npm ci && npm run build"
         return
     fi
 
     info "Building the frontend (npm ci && npm run build)..."
-    (cd "$repo_dir/dashboard" && npm ci && npm run build)
+    (cd "$repo_dir/dashboard" && npm ci && npm run build) || {
+        [ "$branded" -eq 0 ] || die "HiveWork dashboard build failed; source installation stopped."
+        return 1
+    }
+    if [ "$branded" -eq 1 ]; then
+        (cd "$repo_dir" && "$OCTOP_VENV/bin/python" scripts/check_branding.py --built) \
+            || die "HiveWork brand verification failed; source installation stopped."
+    fi
     if [ -f "$console_dest/index.html" ]; then
         _CONSOLE_AVAILABLE=1
         info "Frontend build succeeded"
@@ -655,14 +666,22 @@ if [ "$FROM_SOURCE" = true ]; then
     if [ -n "$SOURCE_DIR" ]; then
         info "Installing from local source: $SOURCE_DIR"
         prepare_console "$SOURCE_DIR"
-        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$OCTOP_VENV/bin/python"
+        source_install_args=()
+        if [ -f "$SOURCE_DIR/src/octop/branding/profile.json" ]; then
+            source_install_args+=(--reinstall-package octop)
+        fi
+        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$OCTOP_VENV/bin/python" "${source_install_args[@]}"
     else
         INSTALL_WORKDIR="$(mktemp -d)"
         trap 'rm -rf "$INSTALL_WORKDIR"' EXIT
         _clone_source_workspace "$INSTALL_WORKDIR"
         REPO_DIR="$INSTALL_WORKDIR/orca"
         prepare_console "$REPO_DIR"
-        uv pip install "${REPO_DIR}${EXTRAS_SUFFIX}" --python "$OCTOP_VENV/bin/python"
+        source_install_args=()
+        if [ -f "$REPO_DIR/src/octop/branding/profile.json" ]; then
+            source_install_args+=(--reinstall-package octop)
+        fi
+        uv pip install "${REPO_DIR}${EXTRAS_SUFFIX}" --python "$OCTOP_VENV/bin/python" "${source_install_args[@]}"
     fi
 else
     # PEP 508: extras 必须在包名与版本说明符之间（octop[browser]==x.y.z），

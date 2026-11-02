@@ -38,8 +38,15 @@ func ensurePortable(locale Locale, status func(string)) error {
 	if launchReady(root) {
 		currentVersion := portableVersion(root)
 		bundledVersion, err := bundledPortableVersion()
+		sameVersionChanged := false
+		if err == nil && bundledVersion != "" && compareVersions(bundledVersion, currentVersion) == 0 {
+			sameVersionChanged, err = bundledPackageChanged(root)
+			if err != nil {
+				return fmt.Errorf("compare bundled package RECORD: %w", err)
+			}
+		}
 		if err != nil || bundledVersion == "" ||
-			(currentVersion != "" && compareVersions(bundledVersion, currentVersion) <= 0) {
+			(currentVersion != "" && compareVersions(bundledVersion, currentVersion) <= 0 && !sameVersionChanged) {
 			status(desktopText(locale, copyStatusUsingRuntime))
 			return nil
 		}
@@ -131,23 +138,69 @@ func installedPackageVersion(root string) string {
 }
 
 func bundledPortableVersion() (string, error) {
+	var version string
+	err := readBundledZip(func(files []*zip.File) error {
+		var err error
+		version, err = versionFromZip(files)
+		return err
+	})
+	return version, err
+}
+
+// RECORD tracks wheel contents, so rebuilt bundles can refresh an unchanged version.
+func bundledPackageChanged(root string) (bool, error) {
+	changed := false
+	err := readBundledZip(func(files []*zip.File) error {
+		for _, file := range files {
+			_, rel, ok := strings.Cut(file.Name, "/")
+			parts := strings.Split(rel, "/")
+			if !ok || len(parts) != 3 || parts[0] != "packages" ||
+				!strings.HasPrefix(parts[1], "octop-") || !strings.HasSuffix(parts[1], ".dist-info") || parts[2] != "RECORD" {
+				continue
+			}
+			reader, err := file.Open()
+			if err != nil {
+				return err
+			}
+			bundled, readErr := io.ReadAll(reader)
+			closeErr := reader.Close()
+			if readErr != nil {
+				return readErr
+			}
+			if closeErr != nil {
+				return closeErr
+			}
+			installed, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+			if err != nil && !os.IsNotExist(err) {
+				return err
+			}
+			if os.IsNotExist(err) || !bytes.Equal(bundled, installed) {
+				changed = true
+			}
+		}
+		return nil
+	})
+	return changed, err
+}
+
+func readBundledZip(read func([]*zip.File) error) error {
 	if os.Getenv("OCTOP_DESKTOP_PORTABLE_ZIP") == "" && len(embeddedPortable) > 0 {
 		reader, err := zip.NewReader(bytes.NewReader(embeddedPortable), int64(len(embeddedPortable)))
 		if err != nil {
-			return "", err
+			return err
 		}
-		return versionFromZip(reader.File)
+		return read(reader.File)
 	}
 	zipPath, err := bundledPortableZip()
 	if err != nil {
-		return "", err
+		return err
 	}
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer reader.Close()
-	return versionFromZip(reader.File)
+	return read(reader.File)
 }
 
 func versionFromZip(files []*zip.File) (string, error) {
