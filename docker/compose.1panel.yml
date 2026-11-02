@@ -4,10 +4,15 @@ name: hivework
 
 services:
   hivework:
-    image: hivework:20261012-wallpaper-7ca3d5da
+    image: hivework:20261102-1.0.3b2
     pull_policy: never
     container_name: hivework
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    shm_size: "1gb"
     ports:
       - "127.0.0.1:18500:8088"
     volumes:

@@ -159,13 +159,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && uv sync --frozen --no-dev \
         --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr \
     && /app/.venv/bin/python -m ensurepip --upgrade --default-pip \
-    && .venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, pynput, rapidocr, onnxruntime, pymupdf" \
+    && PYNPUT_BACKEND=dummy .venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, pynput, rapidocr, onnxruntime, pymupdf" \
     && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk \
     && apt-get purge -y --auto-remove build-essential \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Packages only. Xvnc stays stopped until the user enables the desktop.
-RUN bash /usr/local/bin/bake-desktop.sh
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && bash /usr/local/bin/bake-desktop.sh
 
 RUN mkdir -p /data/.octop
 

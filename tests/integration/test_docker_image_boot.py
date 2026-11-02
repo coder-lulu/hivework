@@ -126,6 +126,8 @@ def docker_boot() -> Iterator[Any]:
             "-e",
             "OCTOP_LOG_LEVEL=warning",
             "--shm-size=1g",
+            "--ulimit",
+            "nofile=65535:65535",
             "-v",
             f"{volume}:/data/.octop",
         ]
@@ -145,6 +147,10 @@ def docker_boot() -> Iterator[Any]:
                 ["docker", "inspect", "-f", "{{.State.Status}} {{.State.ExitCode}}", name]
             )
             state_text = inspect.stdout.strip()
+            if inspect.returncode != 0 or not state_text:
+                last_error = f"inspect={inspect.returncode} {inspect.stderr.strip()}"
+                time.sleep(2)
+                continue
             state, _, exit_code = state_text.partition(" ")
             if state not in {"running", "created"}:
                 logs = _run(["docker", "logs", name], timeout=20)
@@ -280,7 +286,7 @@ def test_docker_unset_password_starts_setup_wizard(docker_boot: Any) -> None:
 @pytest.mark.live
 @pytest.mark.slow
 @docker_live
-def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> None:
+def test_docker_image_runs_on_this_cpu_with_bundled_desktop(docker_boot: Any) -> None:
     """Boot the image on this machine and check it is the matching CPU build.
 
     Run on the machine that fails, for example an ARM FnOS host::
@@ -289,7 +295,7 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
             uv run pytest tests/integration/test_docker_image_boot.py -m live -q
 
     Exit 132 / ``Illegal instruction`` is the failure in issues #2190 and #2301.
-    A baked desktop must be installed and stopped, then this test starts Xvnc.
+    HiveWork starts its bundled desktop at boot. Check stop and restart as well.
     """
     boot = docker_boot(None)
     name = boot["name"]
@@ -359,6 +365,8 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
         [
             "docker",
             "exec",
+            "-e",
+            "PYNPUT_BACKEND=dummy",
             name,
             "/app/.venv/bin/python",
             "-c",
@@ -369,6 +377,18 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
     assert desktop_py.returncode == 0, desktop_py.stderr
     xvnc = _run(["docker", "exec", name, "sh", "-c", "command -v Xvnc || command -v Xtigervnc"])
     assert xvnc.returncode == 0, xvnc.stderr
+    assert _xvnc_running(name)
+    stopped = _run(
+        [
+            "docker",
+            "exec",
+            name,
+            "bash",
+            "/app/src/octop/infra/control/desktop/scripts/linux/v1.0/stop.sh",
+        ],
+        timeout=30,
+    )
+    assert stopped.returncode == 0, stopped.stderr
     assert not _xvnc_running(name)
     enabled = _run(["docker", "exec", name, "test", "-f", "/data/.octop/browser.enabled"])
     assert enabled.returncode != 0
@@ -403,3 +423,17 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
     assert started.returncode == 0, f"{started.stdout}\n{started.stderr}\n{desktop_log.stdout}"
     time.sleep(1)
     assert _xvnc_running(name), desktop_log.stdout or started.stderr
+    desktop_py = _run(
+        [
+            "docker",
+            "exec",
+            "-e",
+            "DISPLAY=:99",
+            name,
+            "/app/.venv/bin/python",
+            "-c",
+            "import mss, pynput",
+        ],
+        timeout=60,
+    )
+    assert desktop_py.returncode == 0, desktop_py.stderr

@@ -125,7 +125,7 @@ def test_runtime_commands_and_desktop_scripts(isolated_runtime: Callable[[str], 
             assert result.exit_code == 0, (command, result.output)
             if "pip" in command:
                 assert "/app/.venv/" in result.output, result.output
-        scripts = list(Path("/app/src/octop/infra/desktop/scripts").rglob("*.sh"))
+        scripts = list(Path("/app/src/octop/infra/control/desktop/scripts").rglob("*.sh"))
         assert scripts, "packaged desktop scripts missing"
         for relative in (
             "infra/agents/builtin_skills/skill-manager/SKILL.md",
