@@ -302,6 +302,27 @@
         padding: 14px;
         margin-top: 20px;
       }
+      #page-loading {
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 16px;
+        color: #3a5fe0;
+      }
+      #page-loading .spinner {
+        width: 32px;
+        height: 32px;
+      }
+      #loading-url {
+        overflow-wrap: anywhere;
+        max-width: 100%;
+      }
+      #loading-slow {
+        color: #64748b;
+      }
       .spinner {
         width: 16px;
         height: 16px;
@@ -395,6 +416,12 @@
         <span class="spinner" aria-hidden="true"></span
         ><span id="progress-label"></span>
       </div>
+      <section id="page-loading" role="status" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <strong id="loading-label"></strong>
+        <span id="loading-url"></span>
+        <p id="loading-slow" hidden></p>
+      </section>
       <section id="recovery" hidden>
         <h2 id="recovery-title"></h2>
         <p id="connection-error" role="alert"></p>
@@ -495,6 +522,8 @@
           refresh: "刷新列表",
           savedNotice: "服务器列表已保存。",
           connecting: "正在连接，请稍候…",
+          loading: "服务器已连接，正在加载页面…",
+          loadingSlow: "页面加载时间较长，请稍候。若加载失败，将显示重试选项。",
           inUse: "先将其他服务器或本地服务设为默认，再删除此地址。",
           error: "操作失败，请重试。",
         },
@@ -542,6 +571,9 @@
           refresh: "Refresh list",
           savedNotice: "Server list saved.",
           connecting: "Connecting, please wait…",
+          loading: "Server connected. Loading the page…",
+          loadingSlow:
+            "The page is taking longer to load. Please wait. Retry options will appear if loading fails.",
           inUse:
             "Set another server or the local service as default before deleting this default address.",
           error: "The operation failed. Please try again.",
@@ -562,6 +594,7 @@
       let selection = null;
       let busy = false;
       let pendingRefresh = false;
+      let loadingTimer = null;
       const el = (id) => document.getElementById(id);
       const text = () => copy[state.locale] || copy.en;
       const call = (name, ...args) => Call.ByName("main.App." + name, ...args);
@@ -572,11 +605,36 @@
       }
       function setBusy(value) {
         busy = value;
-        el("progress").hidden =
-          !connecting && state.connectionPhase !== "connecting";
+        renderConnection();
         document.querySelectorAll("button, input, select").forEach((node) => {
           node.disabled = value || node.dataset.locked === "true";
         });
+      }
+      function renderConnection() {
+        const loading = state.connectionPhase === "loading";
+        el("page-loading").hidden = !loading;
+        el("loading-label").textContent = text().loading;
+        el("loading-url").textContent =
+          state.currentUrl || state.activeUrl || "";
+        el("loading-slow").textContent = text().loadingSlow;
+        el("startup").hidden = loading || view !== "mode";
+        el("remote-view").hidden = loading || view !== "remote";
+        el("back").hidden = loading || view === "mode";
+        el("hint").hidden = loading;
+        el("progress").hidden =
+          loading || (!connecting && state.connectionPhase !== "connecting");
+        el("recovery").hidden = state.connectionPhase !== "failed";
+        el("connection-error").textContent =
+          state.connectionError || text().error;
+        if (loading && loadingTimer === null) {
+          loadingTimer = setTimeout(() => {
+            el("loading-slow").hidden = false;
+          }, 10000);
+        } else if (!loading) {
+          clearTimeout(loadingTimer);
+          loadingTimer = null;
+          el("loading-slow").hidden = true;
+        }
       }
       function finishOperation() {
         setBusy(false);
@@ -737,10 +795,6 @@
         try {
           render(await operation());
           notice(connected ? "" : text().savedNotice);
-          if (connected && state.connectionPhase === "connected") {
-            await call("HideServerManager");
-            await call("ShowMain");
-          }
         } catch (error) {
           try {
             render(await call("GetServerConnections"));
@@ -841,12 +895,9 @@
           ...state,
           connectionPhase: update.connectionPhase,
           connectionError: update.connectionError || "",
+          currentUrl: update.currentUrl ?? state.currentUrl,
         };
-        el("progress").hidden =
-          !connecting && state.connectionPhase !== "connecting";
-        el("recovery").hidden = state.connectionPhase !== "failed";
-        el("connection-error").textContent =
-          state.connectionError || text().error;
+        renderConnection();
       });
       Events.On("desktop:servers:refresh", refresh);
       render(state, true);

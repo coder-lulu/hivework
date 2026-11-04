@@ -38,6 +38,9 @@ type App struct {
 	localStartMu       sync.Mutex
 	quitting           bool
 	dashboardBase      string
+	dashboardRendered  bool
+	dashboardLoadID    uint64
+	dashboardLoad      *dashboardLoad
 	connectionCancel   context.CancelFunc
 	connectionPhase    string
 	connectionError    string
@@ -64,6 +67,7 @@ func (a *App) ServiceShutdown() error {
 	if a.connectionCancel != nil {
 		a.connectionCancel()
 	}
+	a.cancelDashboardLoadLocked()
 	cmd := a.cmd
 	a.cmd = nil
 	ownsPort := a.ownsListenPort
@@ -323,23 +327,28 @@ func (a *App) startLocal(ctx context.Context) (string, error) {
 	return base, nil
 }
 
-func (a *App) showDashboard(base string) {
+func (a *App) showDashboard(ctx context.Context, base string) {
 	a.mu.Lock()
 	a.dashboardBase = base
 	a.mu.Unlock()
 	if a.window == nil {
+		a.mu.Lock()
+		a.dashboardRendered = true
+		a.mu.Unlock()
+		a.setConnectionState(ctx, "connected", "")
 		return
 	}
+	a.beginDashboardLoad(ctx, base, dashboardLoadTimeout)
+	a.window.Hide()
+	a.ShowServerManager()
+	a.window.ExecJS("window.__OCTOP_PAGE_LEAVING__ = true;")
 	a.window.SetURL(base)
-	a.HideServerManager()
-	a.showWindow()
 	a.scheduleDragOverlay()
 	s := a.store.get()
 	go func() {
 		time.Sleep(800 * time.Millisecond)
 		a.applyDashboardPrefs(s)
 	}()
-	a.setStatus(desktopText(s.Locale, copyStatusReady))
 }
 
 func (a *App) hideToTray() {
@@ -355,7 +364,7 @@ func (a *App) showWindow() {
 
 func (a *App) showReadyWindow() {
 	a.mu.Lock()
-	needsChoice := a.dashboardBase == "" && (a.connectionPhase == "choose" || a.connectionPhase == "failed")
+	needsChoice := !a.dashboardRendered && (a.connectionPhase == "choose" || a.connectionPhase == "failed" || a.connectionPhase == "loading")
 	a.mu.Unlock()
 	if needsChoice {
 		a.ShowServerManager()
@@ -464,6 +473,7 @@ func main() {
 	api.app = app
 	attachOpenURLEventListener(app, api.OpenExternal)
 	attachFileDropEventListener(app, api)
+	appendWailsEventListener(app, &dashboardReadyEventListener{app: api})
 	startupConnection := api.beginConnection()
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		applyAppIcon(app)
@@ -498,6 +508,7 @@ func main() {
 		api.scheduleDragOverlay()
 		api.installServerManagerBridge()
 		api.emitConnectionStatus()
+		api.watchDashboardRender()
 	}
 	win.OnWindowEvent(events.Mac.WebViewDidFinishNavigation, installDragOverlay)
 	win.OnWindowEvent(events.Windows.WebViewNavigationCompleted, installDragOverlay)

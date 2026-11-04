@@ -35,10 +35,12 @@ const (
 	copyErrorServerAccess      = "server.access_denied"
 	copyServerLocalLabel       = "server.local_label"
 	copyErrorServerLoad        = "server.load_failed"
+	copyErrorDashboardLoad     = "server.page_load_timeout"
 )
 
 var desktopCopy = map[Locale]map[string]string{
 	LocaleEN: {
+		copyErrorDashboardLoad:     "The server is connected, but its page did not finish loading. Retry or switch servers.",
 		copyStatusChooseServer:     "Choose an existing server or use the local service on this computer.",
 		copyErrorServerLoad:        "Could not read desktop-servers.json. Check the file and its permissions, then restart the desktop app. Your settings have been preserved.",
 		copyErrorServerURL:         "Enter an HTTP or HTTPS server address without a path, credentials or query parameters.",
@@ -73,6 +75,7 @@ var desktopCopy = map[Locale]map[string]string{
 		copyHealthNotReady:         "Octop did not become ready within %s (%s). Make sure Octop is running at this address, or check the terminal logs.",
 	},
 	LocaleZH: {
+		copyErrorDashboardLoad:     "服务器已连接，但页面加载超时。请重试或切换服务器。",
 		copyServerLocalLabel:       "本地服务",
 		copyStatusChooseServer:     "请选择连接已有服务器，或使用此电脑上的本地服务。",
 		copyErrorServerLoad:        "无法读取 desktop-servers.json，请检查文件和权限后重启客户端。原配置已保留。",

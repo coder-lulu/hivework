@@ -53,9 +53,10 @@ func (a *App) emitConnectionStatus() {
 	}
 	a.mu.Lock()
 	phase, message := a.connectionPhase, a.connectionError
+	currentURL := a.dashboardBase
 	a.mu.Unlock()
 	// The main window may contain a remote page; never broadcast server profiles.
-	a.app.Event.Emit("desktop:connection", map[string]string{"connectionPhase": phase, "connectionError": message})
+	a.app.Event.Emit("desktop:connection", map[string]string{"connectionPhase": phase, "connectionError": message, "currentUrl": currentURL})
 }
 
 func (a *App) GetServerConnections(ctx context.Context) (ServerManagerState, error) {
@@ -254,12 +255,11 @@ func (a *App) commitConnection(connection context.Context, base, localBase strin
 		}
 	}
 	if base == "" {
-		a.showDashboard(localBase)
+		a.showDashboard(connection, localBase)
 	} else {
 		a.stopOwnedBackend()
-		a.showDashboard(base)
+		a.showDashboard(connection, base)
 	}
-	a.setConnectionState(connection, "connected", "")
 	return a.serverState(), nil
 }
 
@@ -330,6 +330,7 @@ func (a *App) beginConnection() context.Context {
 	if a.connectionCancel != nil {
 		a.connectionCancel()
 	}
+	a.cancelDashboardLoadLocked()
 	ctx, cancel := context.WithCancel(context.Background())
 	a.connectionCancel = cancel
 	return ctx

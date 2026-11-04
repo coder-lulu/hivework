@@ -145,6 +145,12 @@ def child_env(root: Path) -> dict[str, str]:
         "LANG",
         "LC_ALL",
         "SYSTEMROOT",
+        "PIP_INDEX_URL",
+        "PIP_DEFAULT_TIMEOUT",
+        "PIP_TIMEOUT",
+        "PIP_RETRIES",
+        "PIP_CONFIG_FILE",
+        "HF_HUB_OFFLINE",
         "SSL_CERT_FILE",
         "REQUESTS_CA_BUNDLE",
         "CURL_CA_BUNDLE",
@@ -160,6 +166,8 @@ def child_env(root: Path) -> dict[str, str]:
     env = {key: value for key, value in os.environ.items() if key in allowed}
     env["PATH"] = os.environ.get("PATH", "")
     env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+    env.setdefault("PIP_DEFAULT_TIMEOUT", "120")
+    env.setdefault("PIP_RETRIES", "5")
     env["HF_HOME"] = str(root / "cache")
     env["LAYA_HOST"] = LAYA_HOST
     env["LAYA_PORT"] = str(LAYA_PORT)

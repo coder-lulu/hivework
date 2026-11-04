@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shlex
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -54,6 +55,72 @@ def test_install_commands_use_cpu_torch_and_pinned_laya(tmp_path: Path) -> None:
     assert commands[0][:3] == ["python3", "-m", "venv"]
     assert commands[2][-2:] == ["--index-url", "https://download.pytorch.org/whl/cpu"]
     assert commands[3][-1] == f"laya[serve]=={LAYA_VERSION}"
+
+
+def test_child_env_defaults_pip_network_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for key in (
+        "PIP_INDEX_URL",
+        "PIP_DEFAULT_TIMEOUT",
+        "PIP_TIMEOUT",
+        "PIP_RETRIES",
+        "PIP_CONFIG_FILE",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    env = child_env(tmp_path)
+    assert env["PIP_DEFAULT_TIMEOUT"] == "120"
+    assert env["PIP_RETRIES"] == "5"
+    assert "PIP_INDEX_URL" not in env
+    assert "PIP_TIMEOUT" not in env
+    assert "PIP_CONFIG_FILE" not in env
+
+
+def test_child_env_preserves_custom_pip_network_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = {
+        "PIP_INDEX_URL": "https://packages.example.com/simple",
+        "PIP_DEFAULT_TIMEOUT": "90",
+        "PIP_TIMEOUT": "180",
+        "PIP_RETRIES": "8",
+        "PIP_CONFIG_FILE": str(tmp_path / "pip.conf"),
+    }
+    for key, value in settings.items():
+        monkeypatch.setenv(key, value)
+    env = child_env(tmp_path)
+    assert {key: env[key] for key in settings} == settings
+
+
+def test_child_env_preserves_offline_model_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    assert child_env(tmp_path)["HF_HUB_OFFLINE"] == "1"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NO_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "no_proxy",
+        "all_proxy",
+        "SSL_CERT_FILE",
+        "REQUESTS_CA_BUNDLE",
+        "CURL_CA_BUNDLE",
+    ],
+)
+def test_child_env_preserves_proxy_and_certificate_settings(
+    key: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(key, "configured-value")
+    env_key = key.upper() if os.name == "nt" else key
+    assert child_env(tmp_path)[env_key] == "configured-value"
 
 
 def test_child_env_does_not_forward_api_keys(
@@ -112,6 +179,7 @@ async def test_install_reports_ready_and_keeps_log(tmp_path: Path) -> None:
         runner=runner,
         health_check=lambda: started,
         port_busy=lambda: False,
+        free_bytes=lambda: 8 * 1024**3,
         starter=starter,
         health_timeout=1,
         poll_interval=0.01,
