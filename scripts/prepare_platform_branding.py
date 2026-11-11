@@ -14,43 +14,41 @@ ASSETS = ROOT / "dashboard/branding/assets"
 SOURCE = ROOT / "hivework-logo-assets"
 
 
-def generate_assets() -> None:
-    from PIL import Image, ImageOps
+def generate_desktop_assets() -> None:
+    from PIL import Image
 
-    target = ROOT / "desktop/src/assets"
-    build = ROOT / "desktop/src/build"
-    shutil.copyfile(SOURCE / "icons/app-icon-orange-512.png", build / "appicon.png")
+    resources = ROOT / "desktop/src/resources"
+    renderer = ROOT / "desktop/src/renderer/src/assets"
+    resources.mkdir(parents=True, exist_ok=True)
+    renderer.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(SOURCE / "icons/app-icon-orange-512.png", resources / "icon.png")
     with Image.open(ASSETS / "pwa-512.png") as source:
-        fpk_icons = ROOT / "fnos/branding"
-        fpk_icons.mkdir(exist_ok=True)
-        shutil.copyfile(SOURCE / "icons/app-icon-orange-64.png", fpk_icons / "icon_64.png")
-        source.resize((256, 256), Image.Resampling.LANCZOS).save(fpk_icons / "icon_256.png")
-        source.resize((96, 96), Image.Resampling.LANCZOS).save(target / "hivework-tray.png")
-        (build / "windows").mkdir(exist_ok=True)
         source.save(
-            build / "windows/icon.ico",
+            resources / "icon.ico",
             sizes=[(size, size) for size in (16, 32, 48, 64, 128, 256)],
         )
     with Image.open(SOURCE / "icons/app-icon-orange-1024.png") as source:
         # Keep the macOS 824/1024 icon grid rather than a full-bleed Dock icon.
         icon = Image.new("RGBA", (1024, 1024))
         icon.alpha_composite(source.resize((824, 824), Image.Resampling.LANCZOS), (100, 100))
-        icon.save(build / "appicon-macos.png")
-        (build / "darwin").mkdir(exist_ok=True)
-        icon.save(build / "darwin/icons.icns")
-    with Image.open(SOURCE / "png/mark-black.png") as source:
-        # Template icons use the supplied monochrome mark's alpha, with menu-bar padding.
-        mark = ImageOps.contain(source.convert("RGBA"), (64, 64), Image.Resampling.LANCZOS)
-        icon = Image.new("RGBA", (88, 88))
-        foreground = Image.new("RGBA", mark.size, (0, 0, 0, 255))
-        foreground.putalpha(mark.getchannel("A"))
-        icon.alpha_composite(foreground, ((88 - mark.width) // 2, (88 - mark.height) // 2))
-        icon.save(target / "hivework-tray-template.png")
-    for source, filename in [
-        ("hivework-tray.png", "tray-icon.png"),
-        ("hivework-tray-template.png", "tray-icon-template.png"),
+        icon.save(resources / "icon.icns")
+    for source_name, filename in [
+        ("logo-bilingual.png", "logo_horizontal_dark.png"),
+        ("logo-bilingual-reverse.png", "logo_horizontal_white.png"),
+        ("mark-orange.png", "hivework-mark.png"),
     ]:
-        shutil.copyfile(target / source, target / filename)
+        shutil.copyfile(SOURCE / "png" / source_name, renderer / filename)
+
+
+def generate_assets() -> None:
+    from PIL import Image
+
+    generate_desktop_assets()
+    fpk_icons = ROOT / "fnos/branding"
+    fpk_icons.mkdir(exist_ok=True)
+    shutil.copyfile(SOURCE / "icons/app-icon-orange-64.png", fpk_icons / "icon_64.png")
+    with Image.open(ASSETS / "pwa-512.png") as source:
+        source.resize((256, 256), Image.Resampling.LANCZOS).save(fpk_icons / "icon_256.png")
     for kind in ("docker", "native"):
         staging = ROOT / "fnos" / kind
         for source, name in [
@@ -68,8 +66,6 @@ def generate_assets() -> None:
         SOURCE / "wallpapers/hivework-tech.png",
         ROOT / "src/octop/infra/desktop/scripts/linux/v1.0/wallpaper.png",
     )
-    shutil.copyfile(ASSETS / "octop-mascot-peek.webp", target / "hivework-mascot-peek.webp")
-    shutil.copyfile(ASSETS / "octop-mascot-type.webp", target / "hivework-mascot-type.webp")
 
 
 def fpk_assets(staging: Path, kind: str) -> None:

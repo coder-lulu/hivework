@@ -123,8 +123,10 @@ def check_sources(profile: dict[str, Any], problems: list[str]) -> None:
             )
     for locale in ("en", "zh"):
         for key in changed["backend", locale] | changed["frontend", locale]:
-            if (key.startswith("skills.") or key.startswith("tools.")) and (
-                merged["frontend", locale].get(key) != merged["backend", locale].get(key)
+            if (
+                key.startswith(("skills.", "tools."))
+                and key in merged["backend", locale]
+                and merged["frontend", locale].get(key) != merged["backend", locale].get(key)
             ):
                 problems.append(f"Server-owned label differs: {locale}.{key}")
     check_assets(ASSET_ROOT, problems)

@@ -1,4 +1,4 @@
-"""Sanity checks for the bundled general-assistant template."""
+"""Brand checks for the packaged assistant supplement."""
 
 from __future__ import annotations
 
@@ -10,33 +10,16 @@ import pytest
 import yaml
 from tests.support.fakes import FakeHarnessAgent
 
-from octop.infra.agents.experts.catalog import default_library_root, seed_expert_directory
+from octop.infra.agents.experts.supplements import install_supplements, supplements_dir
 from octop.infra.skills.presentation import apply_skill_presentation
 
-_DIR = default_library_root() / "general-assistant"
-
-
-def test_all_required_files_present() -> None:
-    for name in ("SOUL.md", "manifest.json", "skills/octop-assistant/SKILL.md"):
-        assert (_DIR / name).is_file(), f"missing {name}"
-
-
-def test_meta_yaml_has_id_and_display_name() -> None:
-    meta = json.loads((_DIR / "manifest.json").read_text(encoding="utf-8"))
-    assert meta["id"] == "general-assistant"
-    label = meta.get("label")
-    assert isinstance(label, dict) and isinstance(label.get("en"), str) and label["en"]
-
-
-def test_skills_json_is_a_list() -> None:
-    meta = json.loads((_DIR / "manifest.json").read_text(encoding="utf-8"))
-    assert isinstance(meta.get("prompt_files", []), list)
+_SKILL = supplements_dir() / "octop-assistant" / "SKILL.md"
 
 
 @pytest.mark.asyncio
 async def test_new_assistant_seeds_branded_skill(tmp_path: Path) -> None:
     workspace = FakeHarnessAgent(workspace_dir=tmp_path, system_files_path=".octop").workspace
-    await seed_expert_directory(expert_dir=_DIR, workspace=workspace)
+    await install_supplements(workspace)
     content = await workspace.aread_text("skills/octop-assistant/SKILL.md")
     assert content is not None
     metadata = yaml.safe_load(content.split("---", 2)[1])
@@ -64,6 +47,6 @@ def test_brand_revision_allowlist_excludes_current_template() -> None:
         .read_text(encoding="utf-8")
     )
     legacy = revisions["octop-assistant"]["legacy_sha256"]
-    content = (_DIR / "skills/octop-assistant/SKILL.md").read_bytes().replace(b"\r\n", b"\n")
+    content = _SKILL.read_bytes().replace(b"\r\n", b"\n")
     assert legacy and all(len(digest) == 64 for digest in legacy)
     assert hashlib.sha256(content).hexdigest() not in legacy

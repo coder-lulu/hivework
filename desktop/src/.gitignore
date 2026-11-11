@@ -1,3 +1,19 @@
+node_modules/
+out/
+release/
+dist/
+*.log
+pnpm-debug.log*
+.dev-runtime/
+resources/dashboard
+
+# Build inputs, not sources: CI copies the built Dashboard here, and stages
+# the portable runtime (macOS/Linux already expanded; Windows still the zip)
+# plus portable-version.json. See .github/workflows/octop-desktop.yml — a
+# runtime is megabytes of CPython and site-packages, never committed.
+resources/portable/
+
+# Older Wails build outputs can remain in existing checkouts.
 bin/
 .task/
 *.syso

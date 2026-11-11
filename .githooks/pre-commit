@@ -51,7 +51,8 @@ if ((${#STAGED_FILES[@]} > 0)); then
     fi
   done
   if ((${#existing[@]} > 0)); then
-    git add -- "${existing[@]}"
+    # Stream paths so large merges stay below Windows' command-line limit.
+    printf '%s\0' "${existing[@]}" | git add --pathspec-from-file=- --pathspec-file-nul
   fi
 fi
 

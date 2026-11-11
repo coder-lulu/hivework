@@ -4,7 +4,7 @@ name: hivework
 
 services:
   hivework:
-    image: hivework:20261102-1.0.3b2
+    image: hivework:1.0.3b5
     pull_policy: never
     container_name: hivework
     restart: unless-stopped

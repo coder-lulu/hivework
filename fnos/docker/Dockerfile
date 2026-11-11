@@ -2,8 +2,8 @@
 # =============================================================================
 # HiveWork — 可选的源码镜像（飞牛 FPK 不使用本文件）
 #
-# 飞牛 Docker 版安装包复用 docker-publish 推送的
-# ghcr.io/coder-lulu/hivework:{version}，那份镜像由 docker/Dockerfile 构建。
+# 飞牛 Docker 版安装包使用显式指定的 ghcr.io/coder-lulu/hivework 镜像，
+# 完整版与精简版分别选择审核过的标签，镜像由 docker/Dockerfile 构建。
 # 本文件只在显式执行下面的命令时使用，构建上下文为仓库根目录：
 #   docker build -f fnos/docker/Dockerfile -t hivework:fnos-source .
 #
@@ -77,12 +77,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
             "$APT_MIRROR" "$APT_MIRROR" > /etc/apt/sources.list.d/debian.sources; \
     fi \
     && apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
         libffi-dev \
         libgl1 \
         libglib2.0-0 \
         curl \
         git \
+        postgresql-client \
         ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
@@ -113,25 +113,44 @@ RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
     && find /app/src/octop/infra/control/desktop/scripts -type f -name '*.sh' \
         -exec bash -c 'for script; do bash -n "$script" || exit 1; done' _ {} +
 
-# 安装项目与附加组件。虚拟桌面和系统 Chromium 由后面的 bake-desktop.sh 装入，
-# 不会启动。local-embedding / knowledge-ocr 与 desktop 一起装进镜像层，避免运行时
-# 装进 overlay 后在容器重建时丢失。
-# UV_INDEX_URL 首选阿里云镜像加速；UV_DEFAULT_INDEX 保留 PyPI 作为兜底，
-# 避免新发布的包（如 octop-harness 0.9.16）尚未同步到镜像时构建失败。
+# 安装项目与附加组件。full 含桌面、本地向量和 OCR，由后面的 bake-desktop.sh 装入
+# 桌面但不会启动。lite 只留 browser extra。UV_INDEX_URL 首选阿里云镜像加速；
+# UV_DEFAULT_INDEX 保留 PyPI 作为兜底。
+# pynput 在 import 时会连接 X。full 的无头构建只确认包已安装，不加载后端。
+ARG OCTOP_IMAGE_VARIANT=full
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv \
-    && UV_DEFAULT_INDEX=https://pypi.org/simple \
+    && export UV_DEFAULT_INDEX=https://pypi.org/simple \
        UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
        UV_INSECURE_HOST=mirrors.aliyun.com \
-       uv pip install --python /app/.venv ".[desktop,local-embedding,knowledge-ocr]" \
+    && case "$OCTOP_IMAGE_VARIANT" in \
+         full|lite) ;; \
+         *) echo "OCTOP_IMAGE_VARIANT must be full or lite" >&2; exit 1 ;; \
+       esac \
+    && apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && if [ "$OCTOP_IMAGE_VARIANT" = "lite" ]; then \
+         uv pip install --python /app/.venv ".[browser]" \
+         && /app/.venv/bin/python -c "import octop"; \
+       else \
+         uv pip install --python /app/.venv ".[desktop,local-embedding,knowledge-ocr]" \
+         && /app/.venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, rapidocr, onnxruntime, pymupdf; import importlib.util; assert importlib.util.find_spec('pynput')"; \
+       fi \
+    && if [ "$OCTOP_IMAGE_VARIANT" != "lite" ]; then \
+         apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk; \
+       fi \
     && /app/.venv/bin/python -m ensurepip --upgrade --default-pip \
-    && /app/.venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, pynput, rapidocr, onnxruntime, pymupdf" \
-    && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk \
     && apt-get purge -y --auto-remove build-essential \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Packages only. Xvnc stays stopped until the user enables the desktop.
-RUN bash /usr/local/bin/bake-desktop.sh
+# full 只装桌面包，不启动 Xvnc。lite 写明未捆绑桌面和浏览器。
+ARG OCTOP_IMAGE_VARIANT=full
+RUN if [ "$OCTOP_IMAGE_VARIANT" = "lite" ]; then \
+      mkdir -p /etc/octop \
+      && printf '%s\n' '{"desktop": false, "browser": false, "laya": false}' \
+        > /etc/octop/bundled-components.json; \
+    else \
+      bash /usr/local/bin/bake-desktop.sh; \
+    fi
 
 ENV PATH="/app/.venv/bin:/data/.local/bin:/data/.skillhub/bin:$PATH" \
     NPM_CONFIG_PREFIX=/data/.local \

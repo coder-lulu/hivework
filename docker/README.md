@@ -1,8 +1,8 @@
-# Octop Docker Deployment
+# HiveWork Docker Deployment
 
 ---
 
-This directory contains the Docker build and deployment assets for Octop.
+This directory contains the Docker build and deployment assets for HiveWork.
 
 ### Files
 
@@ -41,8 +41,10 @@ docker run -d \
   -p 8088:8088 \
   -v octop-data:/data/.octop \
   -e HOME=/data \
-  octop:latest
+  hivework:local
 ```
+
+Upstream uses `:<version>` and `:latest` for lite images, with `:<version>-full` and `:full` adding desktop, OCR, and local embedding. HiveWork builds locally as `hivework:local`; pass `--build-arg OCTOP_IMAGE_VARIANT=lite` for a lite build. The inherited upstream publish workflow is disabled in this fork; the manual HiveWork workflow produces reviewable artifacts without publishing to a registry.
 
 ### Faster downloads (China mirrors)
 
@@ -73,11 +75,11 @@ For Compose, put these in `docker/.env`. Values only reach the container if list
 
 ### Node.js
 
-The runtime image includes Node.js 20 (`node`, `npm`, and `npx`), the same major version used to build the dashboard, so skills and expert shells that need Node can run. The toolchain is copied from the `node:20-slim` build stage. Existing deployments must rebuild or upgrade the image to receive it; restarting an older image is insufficient. Packages installed with `npm install -g` live in the container writable layer and must be reinstalled after the container is recreated.
+The runtime image includes Node.js 20 (`node`, `npm`, and `npx`), the same major version used to build the dashboard, so skills and expert shells that need Node can run. The toolchain is copied from the `node:20-slim` build stage. Existing deployments must rebuild or upgrade the image to receive it; restarting an older image is insufficient. The HiveWork entrypoint keeps global npm tools under `/data/.octop/tools/local` in the data volume so they survive container recreation.
 
 ### Knowledge-base dependencies
 
-The image includes the `local-embedding` and `knowledge-ocr` extras alongside
+The full image includes the `local-embedding` and `knowledge-ocr` extras alongside
 `browser`. Both dependency installation steps use these extras, so the final
 `uv sync` retains them. The build checks that the embedding and OCR modules can
 be imported; it does not download model weights or enable either feature.

@@ -19,7 +19,9 @@
     "SSO_IDENTITY_TAKEN": "This login is already linked to another HiveWork account.",
     "LDAP_USER_NOT_PROVISIONED": "This directory account has no HiveWork account yet. Ask an administrator to create one or enable automatic provisioning.",
     "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "Allowed storage root cannot be set while HiveWork is running in a container.",
-    "LOCAL_DOWNLOAD_UNAVAILABLE": "Saving to the host Downloads folder is only available when HiveWork is opened on this computer."
+    "LOCAL_DOWNLOAD_UNAVAILABLE": "Saving to the host Downloads folder is only available when HiveWork is opened on this computer.",
+    "BACKUP_CLIENT_MISSING": "PostgreSQL backup needs {tool}, which is not installed. Install the PostgreSQL client tools where HiveWork runs, then try again.",
+    "BRIDGE_PEER_CONNECTION_OWNED": "The peer already registered this cloud collab link to another user, so this account cannot take it over. Ask that user to delete it, or sign in with the same peer account. If the address actually points at this HiveWork, use the peer's real address instead."
   },
   "desktop": {
     "error_script_missing": "Desktop install script is missing from the HiveWork package."

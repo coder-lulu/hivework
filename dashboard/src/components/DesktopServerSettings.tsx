@@ -2,29 +2,25 @@ import { useEffect, useState } from "react";
 import { Button, Tooltip } from "antd";
 import { Server, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { isDesktopShell } from "../utils/desktopChrome";
+import {
+  getServerConnectionsBridge,
+  type DesktopServerConnection,
+} from "../utils/desktopBridge";
 
-type CurrentServer = { name: string; url: string };
-
-type DesktopWindow = Window & {
-  _wails?: { invoke?: (message: string) => void };
-  __OCTOP_SERVER_SETTINGS__?: boolean;
-  __OCTOP_CURRENT_SERVER__?: CurrentServer;
-};
-
-function serverSettingsAvailable(): boolean {
-  return (
-    isDesktopShell() &&
-    (window as DesktopWindow).__OCTOP_SERVER_SETTINGS__ === true
-  );
-}
-
-function currentServer(): CurrentServer | undefined {
-  const server = (window as DesktopWindow).__OCTOP_CURRENT_SERVER__;
+function currentServer(
+  server: DesktopServerConnection | null,
+): DesktopServerConnection | undefined {
   if (typeof server?.name !== "string" || typeof server.url !== "string")
     return;
   try {
-    if (new URL(server.url).origin === window.location.origin) return server;
+    const url = new URL(server.url);
+    if (
+      /^https?:$/.test(url.protocol) &&
+      (url.origin === window.location.origin ||
+        (window.location.protocol === "octop:" &&
+          window.location.hostname === "app"))
+    )
+      return server;
   } catch {
     // Ignore incomplete bridge metadata while the dashboard is navigating.
   }
@@ -32,21 +28,33 @@ function currentServer(): CurrentServer | undefined {
 
 export default function DesktopServerSettings() {
   const { t } = useTranslation();
-  const [desktop, setDesktop] = useState(serverSettingsAvailable);
-  const [server, setServer] = useState(currentServer);
+  const [desktop, setDesktop] = useState(() =>
+    Boolean(getServerConnectionsBridge()),
+  );
+  const [server, setServer] = useState<DesktopServerConnection>();
 
   useEffect(() => {
+    let active = true;
     let timer: number | undefined;
+    let unsubscribe: (() => void) | undefined;
     let attempts = 0;
     const update = () => {
-      const available = serverSettingsAvailable();
-      setDesktop(available);
-      setServer(currentServer());
-      if (available && timer !== undefined) window.clearInterval(timer);
+      const connections = getServerConnectionsBridge();
+      setDesktop(Boolean(connections));
+      if (!connections) return;
+      if (timer !== undefined) window.clearInterval(timer);
+      unsubscribe ??= connections.onChange(update);
+      void connections
+        .current()
+        .then((next) => {
+          if (active) setServer(currentServer(next));
+        })
+        .catch(() => {
+          if (active) setServer(undefined);
+        });
     };
-    window.addEventListener("octop:server-connection", update);
     // The native bridge can arrive after the remote dashboard has rendered.
-    if (!serverSettingsAvailable()) {
+    if (!getServerConnectionsBridge()) {
       timer = window.setInterval(() => {
         update();
         if (++attempts >= 48) window.clearInterval(timer);
@@ -54,7 +62,8 @@ export default function DesktopServerSettings() {
     }
     update();
     return () => {
-      window.removeEventListener("octop:server-connection", update);
+      active = false;
+      unsubscribe?.();
       if (timer !== undefined) window.clearInterval(timer);
     };
   }, []);
@@ -99,9 +108,7 @@ export default function DesktopServerSettings() {
           aria-label={t("login.serverSettings.manage")}
           style={{ borderRadius: 8, fontSize: 13, flexShrink: 0 }}
           onClick={() => {
-            (window as DesktopWindow)._wails?.invoke?.(
-              "wails:event:emit:desktop:servers:open",
-            );
+            void getServerConnectionsBridge()?.openManager();
           }}
         >
           {t("login.serverSettings.settings")}

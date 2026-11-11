@@ -2,6 +2,7 @@ import { brandingDefines } from "./branding/plugin";
 /// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import svgr from "vite-plugin-svgr";
 import path from "path";
 
 /**
@@ -12,7 +13,7 @@ import path from "path";
  *    place without polluting the prod build config.
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), svgr()],
   define: brandingDefines(),
   resolve: {
     alias: {

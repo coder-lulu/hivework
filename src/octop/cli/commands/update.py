@@ -6,6 +6,7 @@ import click
 
 from octop.branding import brand_name
 from octop.cli.support.db import resolve_cli_locale
+from octop.infra.desktop import desktop_shell_enabled
 from octop.infra.setup.self_update import (
     brand_update_error,
     fetch_pypi_info,
@@ -32,6 +33,9 @@ from octop.infra.setup.self_update import (
 )
 def update(check: bool, yes: bool, verbose: bool, allow_prerelease: bool) -> None:
     """Check for and install a newer Octop release."""
+    if desktop_shell_enabled():
+        click.echo("updates are managed by the desktop shell", err=True)
+        raise SystemExit(1)
     if not official_self_update_allowed():
         click.echo(brand_update_error(resolve_cli_locale()).message, err=not check)
         if not check:

@@ -10,7 +10,7 @@ from importlib import resources
 from octop_harness.backends.workspace import BackendWorkspace
 
 from octop.branding import get_profile
-from octop.infra.agents.experts.catalog import default_library_root
+from octop.infra.agents.experts.supplements import supplements_dir
 
 _SKILL_PATH = "skills/octop-assistant/SKILL.md"
 
@@ -25,7 +25,7 @@ def _legacy_sha256() -> frozenset[str]:
 
 
 def _read_template() -> str:
-    return (default_library_root() / "general-assistant" / _SKILL_PATH).read_text(encoding="utf-8")
+    return (supplements_dir() / "octop-assistant" / "SKILL.md").read_text(encoding="utf-8")
 
 
 async def sync_default_assistant_branding(workspace: BackendWorkspace) -> bool:

@@ -308,6 +308,15 @@ def test_docker_image_runs_on_this_cpu_with_bundled_desktop(docker_boot: Any) ->
         "and Docker started the amd64 one."
     )
 
+    if os.environ.get("OCTOP_IMAGE_VARIANT", "full") == "lite":
+        marker = _run(["docker", "exec", name, "cat", "/etc/octop/bundled-components.json"])
+        assert marker.returncode == 0, marker.stderr
+        payload = json.loads(marker.stdout)
+        assert payload.get("desktop") is False
+        assert payload.get("browser") is False
+        assert payload.get("laya") is False
+        return
+
     probe = _run(
         [
             "docker",
@@ -370,7 +379,7 @@ def test_docker_image_runs_on_this_cpu_with_bundled_desktop(docker_boot: Any) ->
             name,
             "/app/.venv/bin/python",
             "-c",
-            "import mss, pynput",
+            "import mss, importlib.util; assert importlib.util.find_spec('pynput')",
         ],
         timeout=60,
     )

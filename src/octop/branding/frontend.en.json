@@ -15,7 +15,9 @@
     "SSO_IDENTITY_TAKEN": "This login is already linked to another HiveWork account.",
     "LDAP_USER_NOT_PROVISIONED": "This directory account has no HiveWork account yet. Ask an administrator to create one or enable automatic provisioning.",
     "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "Allowed storage root cannot be set while HiveWork is running in a container.",
-    "LOCAL_DOWNLOAD_UNAVAILABLE": "Saving to the host Downloads folder is only available when HiveWork is opened on this computer."
+    "LOCAL_DOWNLOAD_UNAVAILABLE": "Saving to the host Downloads folder is only available when HiveWork is opened on this computer.",
+    "BACKUP_CLIENT_MISSING": "PostgreSQL backup needs {{tool}}, which is not installed. Install the PostgreSQL client tools where HiveWork runs, then try again.",
+    "BRIDGE_PEER_CONNECTION_OWNED": "The peer already registered this cloud collab link to another user, so this account cannot take it over. Ask that user to delete it, or sign in with the same peer account. If the address actually points at this HiveWork, use the peer's real address instead."
   },
   "setupWizard": {
     "subtitle": "Welcome to HiveWork",
@@ -29,10 +31,10 @@
     }
   },
   "experts": {
-    "marketBackendMissing": "The backend has not loaded the Expert Market API yet. Restart HiveWork or confirm it is running this updated code.",
     "rootDirProbe": {
       "permission_denied": "The HiveWork service does not have full read, write, and execute access to this directory."
-    }
+    },
+    "featuredHint": "Expert templates that shipped with HiveWork before the expert market"
   },
   "chat": {
     "remoteExpert": {
@@ -44,7 +46,8 @@
   },
   "skills": {
     "octop-assistant": "HiveWork Assistant",
-    "octop_assistant": "HiveWork Assistant"
+    "octop_assistant": "HiveWork Assistant",
+    "builtinEmptyDesc": "Built-in skills come with HiveWork. They show up here after the expert is running, and chat can use them directly."
   },
   "cronJobs": {
     "form": {
@@ -126,8 +129,8 @@
     "subtitle": "Control the HiveWork host operating system desktop",
     "installFailedHint": "Installation did not complete. Copy the error details below and send them to HiveWork, then retry.",
     "macPermissionsDesc": "In System Settings → Privacy & Security, grant {{permissions}} to the terminal (or Cursor / Terminal) running HiveWork, restart HiveWork, then click Recheck.",
-    "macPermStep2": "Enable the app or terminal running HiveWork under {{permissions}}",
-    "macPermStep3": "Restart HiveWork (octop run), then click Recheck on this page",
+    "macPermStep2Detail": "Enable the app or terminal running HiveWork under {{permissions}}",
+    "macPermStep3Detail": "Restart HiveWork (octop run), then click Recheck on this page",
     "connectDisabledPerms": "Grant Screen Recording and Accessibility in System Settings, then restart HiveWork"
   },
   "wizard": {
@@ -167,7 +170,7 @@
       "sectionBindHint": "The account HiveWork uses to search the directory.",
       "sectionSearchHint": "How HiveWork finds the directory account behind the username typed on the sign-in page.",
       "sectionAttributesHint": "Directory attributes mapped onto the HiveWork account.",
-      "autoProvisionHint": "When off, only existing HiveWork users can sign in through the directory.",
+      "autoProvisionHint": "When off, HiveWork does not create accounts. Accounts already linked to the directory can still sign in. For anyone else, pre-create a directory account in user management: the username must match the directory login name and it has no local password.",
       "adminGroupsOnceBody": "Adding a user to an admin group later does NOT promote them, and removing them does not demote them. Change a role in HiveWork's user list instead.",
       "warning": {
         "no_admin_groups": "No admin group is configured, so no directory user can become a HiveWork admin at first sign-in.",

@@ -1,7 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import UpdateConfig from "./UpdateConfig";
 import { updateApi } from "../../../api/modules/update";
+import {
+  localDesktopBridge,
+  remoteDesktopBridge,
+  remoteServerConnections,
+} from "../../../test/desktopBridge";
+vi.mock("./DesktopUpdatePanel", () => ({
+  default: () => <div>Electron update panel</div>,
+}));
 vi.mock("../../../api/modules/update", () => ({
   updateApi: {
     getUpdateStatus: vi.fn(),
@@ -18,7 +26,49 @@ vi.mock("../../../context/ServiceRestartContext", () => ({
   }),
 }));
 describe("HiveWork update channel", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete window.octopDesktop;
+    delete window.hiveworkServerConnections;
+  });
+  afterEach(() => {
+    delete window.octopDesktop;
+    delete window.hiveworkServerConnections;
+  });
+  it("routes Electron clients to the shell updater without mounting server updates", () => {
+    window.octopDesktop = localDesktopBridge();
+    render(<UpdateConfig />);
+    expect(screen.getByText("Electron update panel")).toBeInTheDocument();
+    expect(updateApi.getUpdateStatus).not.toHaveBeenCalled();
+    expect(updateApi.checkForUpdates).not.toHaveBeenCalled();
+    expect(updateApi.triggerUpgrade).not.toHaveBeenCalled();
+  });
+  it.each(["standalone", "legacy"])(
+    "keeps %s remote clients on their managed server updates",
+    async (kind) => {
+      if (kind === "standalone") {
+        window.hiveworkServerConnections = remoteServerConnections();
+      } else {
+        window.octopDesktop = remoteDesktopBridge();
+      }
+      vi.mocked(updateApi.getUpdateStatus).mockResolvedValue({
+        current_version: "remote-1.2.3",
+        service_mode: null,
+        has_update: false,
+      } as Awaited<ReturnType<typeof updateApi.getUpdateStatus>>);
+
+      render(<UpdateConfig />);
+      expect(await screen.findByText("remote-1.2.3")).toBeInTheDocument();
+      expect(
+        screen.queryByText("Electron update panel"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "brand.releases" }),
+      ).toBeInTheDocument();
+      expect(updateApi.checkForUpdates).not.toHaveBeenCalled();
+      expect(updateApi.triggerUpgrade).not.toHaveBeenCalled();
+    },
+  );
   it("shows the own release guide and current version without calling the official updater", async () => {
     vi.mocked(updateApi.getUpdateStatus).mockResolvedValue({
       current_version: "1.2.3",

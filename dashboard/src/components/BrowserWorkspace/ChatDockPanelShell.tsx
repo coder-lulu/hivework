@@ -18,16 +18,17 @@ import {
   PictureInPicture2,
   X,
 } from "lucide-react";
+import cx from "classnames";
 import { beginPointerDragSession } from "../../hooks/usePointerDragSession";
 import type { PanelMode } from "./index";
 import { useDesktopChromeStyle } from "../../hooks/useDesktopChrome";
 import {
   DOCK_WINDOW_CONTROLS_PAD_PX,
-  isDesktopShell,
   resolveDesktopChromeStyle,
   WINDOW_CONTROLS_SPACER_ATTR,
   windowControlsEndSpacerPx,
 } from "../../utils/desktopChrome";
+import { hasDesktopChrome } from "../../utils/desktopBridge";
 import styles from "./ChatBrowserPanel.module.less";
 
 interface ChatDockPanelShellProps {
@@ -132,7 +133,7 @@ const ChatDockPanelShell: React.FC<ChatDockPanelShellProps> = ({
   const chromeFromContext = useDesktopChromeStyle();
   const desktopChrome =
     chromeFromContext ??
-    (isDesktopShell() ? resolveDesktopChromeStyle() : null);
+    (hasDesktopChrome() ? resolveDesktopChromeStyle() : null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const prevModeRef = useRef<PanelMode>(mode);
   const styleRef = useRef(style);
@@ -448,11 +449,14 @@ const ChatDockPanelShell: React.FC<ChatDockPanelShellProps> = ({
     <div
       ref={panelRef}
       data-dock-panel=""
-      className={`${styles.chatBrowserPanel} ${styles[mode]} ${
-        popupPos && !popupFullscreen ? styles.popupPlaced : ""
-      } ${isPopupDragging ? styles.popupDragging : ""} ${
-        isPopupResizing ? styles.popupResizing : ""
-      } ${popupFullscreen ? styles.popupFullscreen : ""}`}
+      className={cx(
+        styles.chatBrowserPanel,
+        styles[mode],
+        popupPos && !popupFullscreen && styles.popupPlaced,
+        isPopupDragging && styles.popupDragging,
+        isPopupResizing && styles.popupResizing,
+        popupFullscreen && styles.popupFullscreen,
+      )}
       style={popupStyle}
     >
       <div
@@ -560,9 +564,10 @@ const ChatDockPanelShell: React.FC<ChatDockPanelShellProps> = ({
   return (
     <>
       <div
-        className={`${styles.popupMask} ${
-          popupFullscreen ? styles.popupMaskFullscreen : ""
-        }`}
+        className={cx(
+          styles.popupMask,
+          popupFullscreen && styles.popupMaskFullscreen,
+        )}
         onClick={handleMaskClick}
         aria-hidden
         style={blockMaskClose ? { pointerEvents: "none" } : undefined}

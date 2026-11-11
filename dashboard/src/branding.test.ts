@@ -64,10 +64,17 @@ describe("build templates", () => {
     expect(result).toContain("<title>蜂巢智工（HiveWork）</title>");
     expect(result).toContain('var KEY = "theme"');
     expect(result).toContain('var KEY = "octop:chunk-reload"');
+    expect(result).toContain('id="octop-boot-theme"');
+    expect(result).toContain('"octopTheme"');
+    expect(result).toContain('alt="蜂巢智工"');
     expect(result).not.toContain('content="Octop"');
+    expect(result).not.toMatch(/232, 93, 117|240, 139, 154|#e85d75|#f08b9a/);
     const offline = brandOfflineHtml(readTemplate("public/offline.html"));
-    expect(offline).toContain("无法连接到蜂巢智工服务端。");
+    expect(offline).toContain(
+      "无法连接到蜂巢智工服务端，请检查网络连接后重试。",
+    );
     expect(offline).not.toContain("Octop");
+    expect(offline).not.toMatch(/232, 93, 117|240, 139, 154|#e85d75|#f08b9a/);
     expect(offline).toContain('onclick="location.reload()"');
   });
   it("fails clearly for missing and ambiguous template targets", () => {
@@ -80,7 +87,10 @@ describe("build templates", () => {
     );
     expect(() =>
       brandOfflineHtml(
-        readTemplate("public/offline.html").replace('alt="Octop"', 'alt="New"'),
+        readTemplate("public/offline.html").replace(
+          "<title>Octop — 离线中</title>",
+          "",
+        ),
       ),
     ).toThrow(/offline.html expected exactly one/);
   });

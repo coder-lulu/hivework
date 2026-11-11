@@ -15,7 +15,9 @@
     "SSO_IDENTITY_TAKEN": "该登录身份已绑定到其他蜂巢智工账号。",
     "LDAP_USER_NOT_PROVISIONED": "该目录账号尚未创建蜂巢智工账号。请联系管理员创建，或开启自动创建账号。",
     "LOCAL_DOWNLOAD_UNAVAILABLE": "仅在本机打开蜂巢智工时才能保存到系统「下载」文件夹。",
-    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "容器环境下不能设置「允许的存储根目录」。"
+    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "容器环境下不能设置「允许的存储根目录」。",
+    "BACKUP_CLIENT_MISSING": "当前环境找不到 {{tool}}，无法备份或恢复 PostgreSQL。请在运行 蜂巢智工 的环境中安装 PostgreSQL 客户端后再试。",
+    "BRIDGE_PEER_CONNECTION_OWNED": "对端已把这条云端协同登记在另一个用户名下，当前账号无法接管。请让原用户删除那条连接，或改用同一个对端账号。如果填写的地址其实指向本机，请改成对端的真实地址。"
   },
   "setupWizard": {
     "subtitle": "欢迎使用蜂巢智工",
@@ -29,10 +31,10 @@
     }
   },
   "experts": {
-    "marketBackendMissing": "后端还没有加载专家市场接口，请重启蜂巢智工后端或确认当前运行的是这份新代码。",
     "rootDirProbe": {
       "permission_denied": "蜂巢智工服务对该目录没有完整的读、写、执行权限。"
-    }
+    },
+    "featuredHint": "接入专家市场之前，随 蜂巢智工 一起提供的专家模板"
   },
   "chat": {
     "remoteExpert": {
@@ -44,7 +46,8 @@
   },
   "skills": {
     "octop-assistant": "蜂巢智工助手",
-    "octop_assistant": "蜂巢智工助手"
+    "octop_assistant": "蜂巢智工助手",
+    "builtinEmptyDesc": "内置技能随系统提供。专家运行后会出现在这里，对话中可直接使用。"
   },
   "cronJobs": {
     "form": {
@@ -126,8 +129,8 @@
     "subtitle": "控制蜂巢智工主机操作系统桌面",
     "installFailedHint": "安装未完成。请复制下方错误信息发给蜂巢智工排查后重试。",
     "macPermissionsDesc": "请在「系统设置 → 隐私与安全性」中，为运行蜂巢智工的终端（或 Cursor / Terminal）开启「{{permissions}}」，然后重启蜂巢智工，再点「重新检测」。",
-    "macPermStep2": "在「{{permissions}}」中勾选运行蜂巢智工的终端或应用",
-    "macPermStep3": "重启蜂巢智工（octop run），再回到本页点击「重新检测」",
+    "macPermStep2Detail": "在「{{permissions}}」中勾选运行蜂巢智工的终端或应用",
+    "macPermStep3Detail": "重启蜂巢智工（octop run），再回到本页点击「重新检测」",
     "connectDisabledPerms": "请先在系统设置中开启屏幕录制与辅助功能权限，然后重启蜂巢智工"
   },
   "wizard": {
@@ -168,7 +171,7 @@
       "sectionSearchHint": "蜂巢智工依据登录页输入的用户名查找对应的目录账号。",
       "sectionAttributesHint": "目录属性与蜂巢智工账号字段的对应关系。",
       "adminGroupsHint": "这些组的成员在蜂巢智工中获得管理员角色 —— 仅首次创建账号时判定，之后改目录组不会重新套用到已有账号。建议填完整 DN；只填 CN 会匹配到任意 OU 下的同名组。",
-      "autoProvisionHint": "关闭后，仅已存在的蜂巢智工用户可通过目录登录。",
+      "autoProvisionHint": "关闭后不会自动建号。已绑定的目录账号仍可登录；新用户请在用户管理里预先创建目录账号（用户名与目录登录名一致，不设本地密码）。",
       "adminGroupsOnceBody": "之后把用户加入管理员组不会提权，移出也不会降权。需要调整请在蜂巢智工用户列表中修改角色。",
       "warning": {
         "no_admin_groups": "未配置管理员组，首次登录时不会有目录用户成为蜂巢智工管理员。",

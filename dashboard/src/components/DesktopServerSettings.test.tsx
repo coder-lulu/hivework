@@ -6,38 +6,49 @@ import {
   screen,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  DesktopServerConnection,
+  DesktopServerConnectionsBridge,
+} from "../utils/desktopBridge";
 import DesktopServerSettings from "./DesktopServerSettings";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+const shell = vi.hoisted(() => ({
+  serverConnections: undefined as DesktopServerConnectionsBridge | undefined,
+}));
+vi.mock("../utils/desktopBridge", () => ({
+  getServerConnectionsBridge: () => shell.serverConnections ?? null,
 }));
 
-type DesktopWindow = Window & {
-  _wails?: { invoke: (message: string) => void };
-  __OCTOP_SERVER_SETTINGS__?: boolean;
-  __OCTOP_CURRENT_SERVER__?: { name: string; url: string };
-};
+function connect(server: DesktopServerConnection | null = null) {
+  const unsubscribe = vi.fn();
+  let onChange = () => {};
+  const current = vi.fn().mockResolvedValue(server);
+  const openManager = vi.fn().mockResolvedValue(undefined);
+  shell.serverConnections = {
+    current,
+    openManager,
+    onChange: vi.fn((callback) => {
+      onChange = callback;
+      return unsubscribe;
+    }),
+  };
+  return { current, openManager, unsubscribe, changed: () => onChange() };
+}
 
-const desktopWindow = window as DesktopWindow;
-
-describe("desktop server settings entry on login and setup pages", () => {
+describe("Electron server settings entry on login and setup pages", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    delete desktopWindow._wails;
-    delete desktopWindow.__OCTOP_SERVER_SETTINGS__;
-    delete desktopWindow.__OCTOP_CURRENT_SERVER__;
+    shell.serverConnections = undefined;
   });
 
   afterEach(() => {
     cleanup();
-    delete desktopWindow._wails;
-    delete desktopWindow.__OCTOP_SERVER_SETTINGS__;
-    delete desktopWindow.__OCTOP_CURRENT_SERVER__;
+    shell.serverConnections = undefined;
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
-  it("stays hidden in browsers and stops probing after twelve seconds", () => {
+  it("stays hidden in browsers and older shells and stops probing", () => {
     const { container } = render(<DesktopServerSettings />);
     expect(container).toBeEmptyDOMElement();
     act(() => vi.advanceTimersByTime(12_000));
@@ -45,55 +56,37 @@ describe("desktop server settings entry on login and setup pages", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("shows the current server and only emits the native settings event", () => {
-    const invoke = vi.fn();
-    desktopWindow._wails = { invoke };
-    desktopWindow.__OCTOP_SERVER_SETTINGS__ = true;
-    desktopWindow.__OCTOP_CURRENT_SERVER__ = {
+  it("shows the current server and opens only the native manager", async () => {
+    const { openManager } = connect({
       name: "团队线路",
       url: window.location.origin,
-    };
+    });
     const fetch = vi.spyOn(window, "fetch");
     const setItem = vi.spyOn(Storage.prototype, "setItem");
     const removeItem = vi.spyOn(Storage.prototype, "removeItem");
     const clear = vi.spyOn(Storage.prototype, "clear");
-    render(<DesktopServerSettings />);
+    await act(async () => {
+      render(<DesktopServerSettings />);
+    });
 
     const line = `团队线路 - ${window.location.origin}`;
     expect(screen.getByText(line)).toHaveAttribute("title", line);
-    expect(
-      screen.queryByText("login.serverSettings.description"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "login.serverSettings.manage" }),
-    ).toHaveTextContent("login.serverSettings.settings");
     fireEvent.click(
       screen.getByRole("button", { name: "login.serverSettings.manage" }),
     );
-
-    expect(invoke).toHaveBeenCalledExactlyOnceWith(
-      "wails:event:emit:desktop:servers:open",
-    );
+    expect(openManager).toHaveBeenCalledExactlyOnceWith();
     expect(fetch).not.toHaveBeenCalled();
     expect(setItem).not.toHaveBeenCalled();
     expect(removeItem).not.toHaveBeenCalled();
     expect(clear).not.toHaveBeenCalled();
   });
 
-  it("detects late native bridge injection and stops probing", () => {
+  it("detects a late bridge and stops probing", async () => {
     render(<DesktopServerSettings />);
     act(() => vi.advanceTimersByTime(500));
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    desktopWindow._wails = { invoke: vi.fn() };
-    desktopWindow.__OCTOP_SERVER_SETTINGS__ = true;
-    desktopWindow.__OCTOP_CURRENT_SERVER__ = {
-      name: "Late profile",
-      url: window.location.origin,
-    };
-    act(() => vi.advanceTimersByTime(250));
-    expect(
-      screen.getByRole("button", { name: "login.serverSettings.manage" }),
-    ).toBeInTheDocument();
+    connect({ name: "Late profile", url: window.location.origin });
+    await act(async () => vi.advanceTimersByTime(250));
     expect(
       screen.getByText(`Late profile - ${window.location.origin}`),
     ).toBeInTheDocument();
@@ -101,73 +94,50 @@ describe("desktop server settings entry on login and setup pages", () => {
   });
 
   it("cleans up pending bridge detection when unmounted", () => {
-    const remove = vi.spyOn(window, "removeEventListener");
     const { unmount } = render(<DesktopServerSettings />);
     expect(vi.getTimerCount()).toBe(1);
     unmount();
     expect(vi.getTimerCount()).toBe(0);
-    expect(remove).toHaveBeenCalledWith(
-      "octop:server-connection",
-      expect.any(Function),
-    );
   });
 
-  it("uses the legacy label and origin when current profile metadata is unavailable", () => {
-    desktopWindow._wails = { invoke: vi.fn() };
-    desktopWindow.__OCTOP_SERVER_SETTINGS__ = true;
-    render(<DesktopServerSettings />);
+  it("refreshes metadata from bridge events and unsubscribes on unmount", async () => {
+    const { current, changed, unsubscribe } = connect();
+    const view = render(<DesktopServerSettings />);
+    await act(async () => {});
     expect(
       screen.getByText(
         `login.serverSettings.label - ${window.location.origin}`,
       ),
     ).toBeInTheDocument();
-  });
-
-  it("updates late profile metadata and renames from native connection events", () => {
-    desktopWindow._wails = { invoke: vi.fn() };
-    desktopWindow.__OCTOP_SERVER_SETTINGS__ = true;
-    render(<DesktopServerSettings />);
     for (const name of ["远程工作室", "团队主线路"]) {
-      desktopWindow.__OCTOP_CURRENT_SERVER__ = {
-        name,
-        url: window.location.origin,
-      };
-      act(() =>
-        window.dispatchEvent(new CustomEvent("octop:server-connection")),
-      );
+      current.mockResolvedValue({ name, url: window.location.origin });
+      await act(async () => changed());
       expect(
         screen.getByText(`${name} - ${window.location.origin}`),
       ).toBeInTheDocument();
     }
-    expect(vi.getTimerCount()).toBe(0);
+    view.unmount();
+    expect(unsubscribe).toHaveBeenCalledOnce();
   });
 
-  it("ignores profile metadata from another origin or with an invalid URL", () => {
-    desktopWindow._wails = { invoke: vi.fn() };
-    desktopWindow.__OCTOP_SERVER_SETTINGS__ = true;
-    desktopWindow.__OCTOP_CURRENT_SERVER__ = {
+  it("ignores stale origins, invalid URLs and failed metadata requests", async () => {
+    const { current, changed } = connect({
       name: "Stale",
       url: "https://other.example.com",
-    };
-    render(<DesktopServerSettings />);
+    });
+    await act(async () => {
+      render(<DesktopServerSettings />);
+    });
+    expect(screen.queryByText(/Stale/)).not.toBeInTheDocument();
+    current.mockResolvedValue({ name: "Broken", url: "invalid address" });
+    await act(async () => changed());
+    expect(screen.queryByText(/Broken/)).not.toBeInTheDocument();
+    current.mockRejectedValue(new Error("Connection unavailable"));
+    await act(async () => changed());
     expect(
       screen.getByText(
         `login.serverSettings.label - ${window.location.origin}`,
       ),
     ).toBeInTheDocument();
-    desktopWindow.__OCTOP_CURRENT_SERVER__ = {
-      name: "Broken",
-      url: "invalid address",
-    };
-    act(() => window.dispatchEvent(new CustomEvent("octop:server-connection")));
-    expect(screen.queryByText(/Stale|Broken/)).not.toBeInTheDocument();
-  });
-
-  it("hides the unsupported entry in older desktop clients", () => {
-    desktopWindow._wails = { invoke: vi.fn() };
-    render(<DesktopServerSettings />);
-    act(() => vi.advanceTimersByTime(12_000));
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(vi.getTimerCount()).toBe(0);
   });
 });

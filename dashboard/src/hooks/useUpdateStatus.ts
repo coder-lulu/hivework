@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { updateApi, type UpdateStatus } from "../api/modules/update";
 import {
+  getDesktopUpdater,
+  type DesktopUpdateCheckResult,
+} from "../utils/desktopBridge";
+import {
   UPDATE_STATUS_CHANGED_EVENT,
   UPDATE_STATUS_POLL_MS,
   isUpdateStatusCacheExpired,
@@ -11,10 +15,40 @@ import {
 /** Shared in-flight probe so Header + Sidebar mounts don't stampede PyPI. */
 let inFlight: Promise<UpdateStatus | null> | null = null;
 
+/**
+ * Shell check → the same status the header icon and update page already share.
+ * ``latestVersion`` is the channel head, including when it is not an upgrade.
+ */
+function statusFromShell(res: DesktopUpdateCheckResult): UpdateStatus {
+  const available =
+    res.status === "update-available" && Boolean(res.latestVersion);
+  return {
+    current_version: res.currentVersion,
+    latest_version: res.latestVersion,
+    has_update: available,
+    is_editable: false,
+    service_mode: null,
+    desktop: true,
+    error: res.status === "error" ? res.error : null,
+    error_code: null,
+    source: null,
+    last_check_time: new Date().toISOString(),
+    release_notes: null,
+  };
+}
+
 async function probeUpdateStatus(): Promise<UpdateStatus | null> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
+      // Desktop Python reports has_update: false on purpose. The shell probe
+      // is what lights the update icon; the page reads the same stored status.
+      const updater = getDesktopUpdater();
+      if (updater) {
+        const next = statusFromShell(await updater.checkForUpdates());
+        storeUpdateStatus(next);
+        return next;
+      }
       const next = await updateApi.getUpdateStatus();
       storeUpdateStatus(next);
       return next;

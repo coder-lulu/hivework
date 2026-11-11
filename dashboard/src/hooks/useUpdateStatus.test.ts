@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import {
+  localDesktopBridge,
+  remoteDesktopBridge,
+  remoteServerConnections,
+} from "../test/desktopBridge";
 
 import type { UpdateStatus } from "../api/modules/update";
 import {
@@ -44,6 +49,8 @@ describe("useUpdateStatus", () => {
     vi.useRealTimers();
     clearStoredUpdateStatus();
     localStorage.clear();
+    delete window.octopDesktop;
+    delete window.hiveworkServerConnections;
   });
 
   it("probes on mount when cache is empty", async () => {
@@ -123,6 +130,48 @@ describe("useUpdateStatus", () => {
     expect(UPDATE_STATUS_CHANGED_EVENT).toBe("octop:update-status-changed");
   });
 
+  it("probes the desktop shell and does not ask Python", async () => {
+    const checkForUpdates = vi.fn().mockResolvedValue({
+      status: "update-available",
+      currentVersion: "1.0.3b1",
+      latestVersion: "v1.0.4",
+      error: null,
+    });
+    window.octopDesktop = { ...localDesktopBridge(), checkForUpdates };
+    const { result } = renderHook(() => useUpdateStatus());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(getUpdateStatus).not.toHaveBeenCalled();
+    expect(checkForUpdates).toHaveBeenCalledTimes(1);
+    expect(result.current.hasUpdate).toBe(true);
+    expect(result.current.status?.latest_version).toBe("v1.0.4");
+    expect(result.current.status?.current_version).toBe("1.0.3b1");
+    delete window.octopDesktop;
+  });
+
+  it("shows the channel head when the shell has nothing to install", async () => {
+    const checkForUpdates = vi.fn().mockResolvedValue({
+      status: "up-to-date",
+      currentVersion: "1.0.3b1",
+      latestVersion: "v1.0.2",
+      error: null,
+    });
+    window.octopDesktop = { ...localDesktopBridge(), checkForUpdates };
+    const { result } = renderHook(() => useUpdateStatus());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.hasUpdate).toBe(false);
+    expect(result.current.status?.latest_version).toBe("v1.0.2");
+    expect(result.current.status?.current_version).toBe("1.0.3b1");
+    delete window.octopDesktop;
+  });
+
   it("trusts server has_update for chrome reminders", async () => {
     getUpdateStatus.mockResolvedValue({
       ...sample,
@@ -139,5 +188,44 @@ describe("useUpdateStatus", () => {
 
     expect(result.current.hasUpdate).toBe(true);
     expect(result.current.status?.latest_version).toBe("0.9.33");
+  });
+
+  it.each(["standalone", "legacy"])(
+    "loads remote server status with the %s server manager bridge",
+    async (kind) => {
+      if (kind === "standalone") {
+        window.hiveworkServerConnections = remoteServerConnections();
+      } else {
+        window.octopDesktop = remoteDesktopBridge();
+      }
+      getUpdateStatus.mockResolvedValue(sample);
+      const { result } = renderHook(() => useUpdateStatus());
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(getUpdateStatus).toHaveBeenCalledOnce();
+      expect(result.current.status?.current_version).toBe(
+        sample.current_version,
+      );
+      expect(result.current.hasUpdate).toBe(true);
+      expect(window.octopDesktop?.session).toBeUndefined();
+      expect(window.octopDesktop?.wsEndpoint).toBeUndefined();
+    },
+  );
+
+  it("uses server status when an older shell has no complete updater", async () => {
+    const bridge = localDesktopBridge();
+    window.octopDesktop = { checkForUpdates: bridge.checkForUpdates };
+    getUpdateStatus.mockResolvedValue(sample);
+    renderHook(() => useUpdateStatus());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(getUpdateStatus).toHaveBeenCalledOnce();
+    expect(bridge.checkForUpdates).not.toHaveBeenCalled();
   });
 });

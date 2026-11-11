@@ -19,7 +19,9 @@
     "SSO_IDENTITY_TAKEN": "该登录身份已绑定到其他蜂巢智工账号。",
     "LDAP_USER_NOT_PROVISIONED": "该目录账号尚未创建蜂巢智工账号。请联系管理员创建，或开启自动创建账号。",
     "LOCAL_DOWNLOAD_UNAVAILABLE": "仅在本机打开蜂巢智工时才能保存到系统「下载」文件夹。",
-    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "容器环境下不能设置「允许的存储根目录」。"
+    "WORKSPACE_ROOT_CONTAINER_UNSUPPORTED": "容器环境下不能设置「允许的存储根目录」。",
+    "BACKUP_CLIENT_MISSING": "当前环境找不到 {tool}，无法备份或恢复 PostgreSQL。请在运行 蜂巢智工 的环境中安装 PostgreSQL 客户端后再试。",
+    "BRIDGE_PEER_CONNECTION_OWNED": "对端已把这条云端协同登记在另一个用户名下，当前账号无法接管。请让原用户删除那条连接，或改用同一个对端账号。如果填写的地址其实指向本机，请改成对端的真实地址。"
   },
   "desktop": {
     "error_script_missing": "安装脚本未随蜂巢智工包分发，无法安装。"

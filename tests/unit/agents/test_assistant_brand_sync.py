@@ -17,12 +17,12 @@ _TEMPLATE = "---\nname: octop-assistant\ndescription: HiveWork assistant\n---\n#
 
 
 @pytest.fixture
-def branded_library(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    library = tmp_path / "library"
-    template = library / "general-assistant" / _SKILL_PATH
+def branded_supplements(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    supplements = tmp_path / "supplements"
+    template = supplements / "octop-assistant" / "SKILL.md"
     template.parent.mkdir(parents=True)
     template.write_text(_TEMPLATE, encoding="utf-8")
-    monkeypatch.setattr(brand_sync, "default_library_root", lambda: library)
+    monkeypatch.setattr(brand_sync, "supplements_dir", lambda: supplements)
     monkeypatch.setattr(brand_sync, "get_profile", lambda: {"id": "hivework"})
     # Fixture digests belong only to this mocked resource reader, never the
     # packaged allowlist of official, released skill revisions.
@@ -39,7 +39,7 @@ def branded_library(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_upgrade_legacy_once(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    branded_library: None,
+    branded_supplements: None,
     system_files_path: str,
     newline: str,
 ) -> None:
@@ -67,7 +67,7 @@ async def test_upgrade_legacy_once(
 async def test_preserves_unknown_current_or_missing_skill(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    branded_library: None,
+    branded_supplements: None,
     content: str | None,
 ) -> None:
     workspace = FakeHarnessAgent(workspace_dir=tmp_path / "workspace").workspace
@@ -83,7 +83,7 @@ async def test_preserves_unknown_current_or_missing_skill(
 
 @pytest.mark.asyncio
 async def test_other_brand_keeps_legacy_skill(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, branded_library: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, branded_supplements: None
 ) -> None:
     workspace = FakeHarnessAgent(workspace_dir=tmp_path / "workspace").workspace
     await workspace.awrite_text(_SKILL_PATH, _LEGACY, force=True)

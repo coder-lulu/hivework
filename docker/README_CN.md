@@ -1,8 +1,8 @@
-# Octop Docker 部署
+# HiveWork Docker 部署
 
 ---
 
-本目录包含 Octop 的 Docker 构建与部署相关文件。
+本目录包含 HiveWork 的 Docker 构建与部署相关文件。
 
 ### 文件说明
 
@@ -41,8 +41,10 @@ docker run -d \
   -p 8088:8088 \
   -v octop-data:/data/.octop \
   -e HOME=/data \
-  octop:latest
+  hivework:local
 ```
+
+上游以 `:<version>` 和 `:latest` 发布精简版，`:<version>-full` 和 `:full` 才带桌面、OCR 和本地向量。HiveWork 本地构建默认是完整版 `hivework:local`，精简版要加 `--build-arg OCTOP_IMAGE_VARIANT=lite`。本分支禁用继承的上游发布工作流，独立 HiveWork 手动工作流只生成可审阅制品，不发布到镜像仓库。
 
 ### 国内镜像加速
 
@@ -73,11 +75,11 @@ Compose 可在 `docker/.env` 中配置上述变量。注意：`.env` 只参与 C
 
 ### Node.js
 
-运行镜像带 Node.js 20（`node` / `npm` / `npx`），与构建前端时使用的版本相同，供依赖 Node 的技能和专家 shell 使用。工具链从构建阶段的 `node:20-slim` 复用。已有部署需要重新构建或升级镜像后才会带上 Node.js；仅重启旧镜像无效。`npm install -g` 装进容器可写层，重建容器后需要重装。
+运行镜像带 Node.js 20（`node` / `npm` / `npx`），与构建前端时使用的版本相同，供依赖 Node 的技能和专家 shell 使用。工具链从构建阶段的 `node:20-slim` 复用。已有部署需要重新构建或升级镜像后才会带上 Node.js；仅重启旧镜像无效。HiveWork 入口将 npm 全局工具保存在数据卷的 `/data/.octop/tools/local` 中，重建容器后仍可使用。
 
 ### 知识库依赖
 
-镜像除 `browser` 外，还包含 `local-embedding` 和 `knowledge-ocr` 可选依赖。
+完整镜像除 `browser` 外，还包含 `local-embedding` 和 `knowledge-ocr` 可选依赖。
 两次依赖安装均指定这些 extras，避免最后一次 `uv sync` 将其移除。构建时会检查
 嵌入与 OCR 模块能否导入；不会下载模型权重，也不会自动开启知识库或 OCR。
 

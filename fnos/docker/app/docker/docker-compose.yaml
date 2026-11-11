@@ -1,3 +1,5 @@
+# Placeholder only. HiveWork packaging requires an explicitly reviewed FPK_IMAGE_TAG.
+# scripts/build-fpk.sh stages the selected image; never substitute an upstream image.
 services:
   octop:
     image: ghcr.io/coder-lulu/hivework:unreleased

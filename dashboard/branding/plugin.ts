@@ -51,6 +51,13 @@ function replaceOnce(
   }
   return html.replace(target, value);
 }
+function brandTemplateColors(html: string) {
+  return html
+    .replaceAll("232, 93, 117", "75, 116, 250")
+    .replaceAll("240, 139, 154", "123, 155, 252")
+    .replaceAll("#e85d75", "#3a5fe0")
+    .replaceAll("#f08b9a", "#7b9bfc");
+}
 export function brandIndexHtml(html: string) {
   const { name } = profile();
   let result = replaceOnce(
@@ -65,28 +72,18 @@ export function brandIndexHtml(html: string) {
     `name="apple-mobile-web-app-title" content="${name.zh}"`,
     "index.html",
   );
-  for (const [target, value] of [
-    ["rgba(232, 93, 117, 0.18)", "rgba(75, 116, 250, 0.18)"],
-    ["#e85d75", "#3a5fe0"],
-    ["rgba(240, 139, 154, 0.22)", "rgba(123, 155, 252, 0.22)"],
-    ["#f08b9a", "#7b9bfc"],
-  ])
-    result = replaceOnce(result, target, value, "index.html");
-  return result;
+  result = result.replaceAll('alt="Octop"', `alt="${name.zh}"`);
+  return brandTemplateColors(result);
 }
 export function brandOfflineHtml(html: string) {
   const { name } = profile();
   let result = html;
   for (const [target, value] of [
     ["<title>Octop — 离线中</title>", `<title>${name.zh} — 离线中</title>`],
-    ['alt="Octop"', `alt="${name.zh}"`],
-    ["无法连接到 Octop 服务端。", `无法连接到${name.zh}服务端。`],
-    ["#f08b9a", "#7b9bfc"],
-    ["#e85d75", "#3a5fe0"],
-    ["#d14a62", "#2e4fd4"],
+    ["无法连接到 Octop 服务端", `无法连接到${name.zh}服务端`],
   ])
     result = replaceOnce(result, target, value, "offline.html");
-  return result;
+  return brandTemplateColors(result);
 }
 export function brandManifest(manifest: Record<string, unknown>) {
   const { name, description } = profile();

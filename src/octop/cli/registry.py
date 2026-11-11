@@ -41,4 +41,10 @@ COMMANDS: dict[str, tuple[str, str, str]] = {
     "bridge": (".commands.bridge", "bridge", f"Manage remote {brand_name()} bridge peers."),
     "acp": (".commands.acp", "acp_cmd", f"Run {brand_name()} agent as ACP server (stdio)."),
     "plugin": (".commands.plugin", "plugin", "Install and manage plugins."),
+    "cloud": (".commands.cloud", "cloud", "Tencent Cloud credential bridge (tccli import)."),
+    "migrate": (
+        ".commands.migrate",
+        "migrate",
+        "Migrate an OpenClaw or Hermes Agent setup into an expert.",
+    ),
 }
