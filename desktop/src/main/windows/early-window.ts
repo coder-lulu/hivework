@@ -67,11 +67,12 @@ export function createEarlyWindow(options: EarlyWindowOptions): EarlyWindow {
       ...(options.preload ? { preload: options.preload } : {}),
     },
   });
-  trustedEarlyWindows.set(win.webContents.id, [
+  const contentsId = win.webContents.id;
+  trustedEarlyWindows.set(contentsId, [
     pathToFileURL(options.splashFile).href,
     pathToFileURL(options.errorFile).href,
   ]);
-  win.on("closed", () => trustedEarlyWindows.delete(win.webContents.id));
+  win.on("closed", () => trustedEarlyWindows.delete(contentsId));
   // Before the first paint: the splash is a loading page and draws no menu.
   concealWindowsMenuBar(win);
   win.once("ready-to-show", () => {

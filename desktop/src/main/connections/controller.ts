@@ -15,6 +15,7 @@ export interface PreparedConnection {
 export interface ConnectionHooks {
   startLocal(signal: AbortSignal): Promise<string>;
   stopLocal(): Promise<void>;
+  isLocalRunning(): boolean;
   checkRemote(url: string, signal: AbortSignal): Promise<void>;
   prepare(target: ConnectionTarget, signal: AbortSignal): Promise<PreparedConnection>;
   changed(): void;
@@ -138,6 +139,9 @@ export class ConnectionController {
     this.hooks.changed();
     let prepared: PreparedConnection | null = null;
     let committed = false;
+    let localPreparation: Promise<string> | undefined;
+    let releaseLocal: (() => void) | undefined;
+    let localStarted = false;
     try {
       let origin: string;
       if (url) {
@@ -151,17 +155,25 @@ export class ConnectionController {
         // A new local spawn cannot race a superseded prepare or post-commit
         // cleanup. stopLocal captures only the resources it currently owns.
         const previous = this.localWork;
-        const preparation = (async () => {
+        // Keep ownership until the page/save transaction has either committed
+        // or cleaned up. A successor must not overtake a failed local page.
+        this.localWork = new Promise<void>((resolve) => { releaseLocal = resolve; });
+        localPreparation = (async () => {
           await previous.catch(() => undefined);
           current();
+          // Remembering or reopening local mode must not interrupt the active
+          // backend. A crashed backend still follows the stop/start path.
+          if (this.active?.mode === "local" && this.hooks.isLocalRunning()) {
+            return this.active.url;
+          }
+          localStarted = true;
           await this.hooks.stopLocal();
           current();
           const localOrigin = await this.hooks.startLocal(signal);
           current();
           return localOrigin;
         })();
-        this.localWork = preparation;
-        origin = await abortable(preparation, signal);
+        origin = await abortable(localPreparation, signal);
       }
       current();
       const saved = this.store.get().servers.find((item) => item.url === url);
@@ -201,6 +213,16 @@ export class ConnectionController {
       throw cause;
     } finally {
       if (!committed) (prepared as PreparedConnection | null)?.dispose();
+      if (releaseLocal) {
+        try {
+          // Even a hook which ignored cancellation must finish before its
+          // resources can be stopped or handed to the next connection.
+          await localPreparation?.catch(() => undefined);
+          if (!committed && localStarted) await this.hooks.stopLocal();
+        } finally {
+          releaseLocal();
+        }
+      }
     }
   }
 }

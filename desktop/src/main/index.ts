@@ -788,6 +788,10 @@ function errorDetail(detail?: string): string | undefined {
   return text || undefined;
 }
 
+function localStartupError(message: string, detail?: string): Error {
+  return new Error([message, errorDetail(detail)].filter(Boolean).join("\n\n"));
+}
+
 /** Spawn the Python sidecar on a fresh loopback port and wait for health. */
 async function startBackend(signal?: AbortSignal): Promise<boolean> {
   if (!backend) return false;
@@ -1168,6 +1172,7 @@ async function boot(): Promise<void> {
   connections = new ConnectionController(store, {
     startLocal: startLocalConnection,
     stopLocal: stopLocalConnection,
+    isLocalRunning: () => backendPort !== 0 && supervisor?.isRunning() === true,
     checkRemote: checkRemoteHealth,
     prepare: prepareConnectionWindow,
     changed: publishConnectionState,
@@ -1213,10 +1218,10 @@ async function startLocalConnection(signal: AbortSignal): Promise<string> {
           `runtime ${decision.action} (${decision.reason}) bundled=${bundled.version} local=${local.version ?? "none"}`,
         );
         if (decision.action === "stop") {
-          throw new Error(JSON.stringify({
-            message: `检测到本机运行时版本为 ${decision.localVersion}，当前安装的是 ${bundled.version}。这是手动覆盖安装的旧版，已停止启动，并保留了现有运行时。`,
-            detail: errorDetail(`运行时目录: ${portableDir}`),
-          }));
+          throw localStartupError(
+            `检测到本机运行时版本为 ${decision.localVersion}，当前安装的是 ${bundled.version}。这是手动覆盖安装的旧版，已停止启动，并保留了现有运行时。`,
+            `运行时目录: ${portableDir}`,
+          );
         }
 
         if (decision.action === "extract" || decision.action === "replace") {
@@ -1224,10 +1229,10 @@ async function startLocalConnection(signal: AbortSignal): Promise<string> {
           const digest = await sha256File(zip);
           if (digest !== bundled.sha256) {
             desktopLog().error(`portable zip sha256 mismatch file=${zip}`);
-            throw new Error(JSON.stringify({
-              message: "随包运行时校验失败（SHA-256 不匹配），为避免执行被篡改的文件，已停止启动。",
-              detail: errorDetail(`文件: ${zip}\n期望: ${bundled.sha256}\n实际: ${digest}`),
-            }));
+            throw localStartupError(
+              "随包运行时校验失败（SHA-256 不匹配），为避免执行被篡改的文件，已停止启动。",
+              `文件: ${zip}\n期望: ${bundled.sha256}\n实际: ${digest}`,
+            );
           }
           signal.throwIfAborted();
           extractPortableZip(zip, portableDir);
@@ -1236,10 +1241,7 @@ async function startLocalConnection(signal: AbortSignal): Promise<string> {
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
         desktopLog().error(`portable runtime preparation failed: ${detail}`);
-        throw new Error(JSON.stringify({
-          message: "准备便携运行时（解压或校验）时出错，已停止启动。",
-          detail: errorDetail(detail),
-        }));
+        throw localStartupError("准备便携运行时（解压或校验）时出错，已停止启动。", detail);
       }
     }
 
@@ -1293,12 +1295,10 @@ async function startLocalConnection(signal: AbortSignal): Promise<string> {
     signal.throwIfAborted();
     const ready = await startBackend(signal);
     if (!ready) {
-      throw new Error(JSON.stringify({
-        message: "Python 后端未能就绪（健康检查超时或进程提前退出）。请查看日志后重试。",
-          detail: errorDetail(
-            backend ? `启动器: ${backend.launchScript}\n端口: 127.0.0.1:${backendPort}` : undefined,
-          ),
-      }));
+      throw localStartupError(
+        "Python 后端未能就绪（健康检查超时或进程提前退出）。请查看日志后重试。",
+        backend ? `启动器: ${backend.launchScript}\n端口: 127.0.0.1:${backendPort}` : undefined,
+      );
     }
 
     if (dashboardDev) {
@@ -1312,10 +1312,7 @@ async function startLocalConnection(signal: AbortSignal): Promise<string> {
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
         desktopLog().error(`dashboard dev server failed: ${detail}`);
-        throw new Error(JSON.stringify({
-          message: "仪表盘开发服务器没有起来，页面无法热更新。",
-          detail: errorDetail(detail),
-        }));
+        throw localStartupError("仪表盘开发服务器没有起来，页面无法热更新。", detail);
       }
     }
 

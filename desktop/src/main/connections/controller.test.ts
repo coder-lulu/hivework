@@ -26,9 +26,11 @@ function fixture(t: TestContext, override: Partial<ConnectionHooks> = {}) {
   store.save("", { name: "A", url: A });
   store.save("", { name: "B", url: B });
   const calls: string[] = [];
+  let localRunning = false;
   const hooks: ConnectionHooks = {
-    startLocal: async () => { calls.push("spawn-owned"); return "octop://app"; },
-    stopLocal: async () => { calls.push("stop-owned"); },
+    startLocal: async () => { calls.push("spawn-owned"); localRunning = true; return "octop://app"; },
+    stopLocal: async () => { calls.push("stop-owned"); localRunning = false; },
+    isLocalRunning: () => localRunning,
     checkRemote: async (url) => { calls.push(`health:${url}`); },
     prepare: async (target) => {
       calls.push(`prepare:${target.mode}:${target.url}`);
@@ -97,7 +99,7 @@ test("temporary local keeps the remote default across reopen, retry and back-swi
   await controller.connect(B);
   assert.equal(store.get().activeUrl, B);
   assert.equal(controller.current()!.url, B);
-  assert.equal(calls.filter((call) => call === "spawn-owned").length, 2);
+  assert.equal(calls.filter((call) => call === "spawn-owned").length, 1);
 });
 
 test("late health from cancelled selection cannot load or persist over its successor", async (t) => {
@@ -168,7 +170,7 @@ test("cancelled local prepare is serialized before the new owned-process cleanup
   prepared.resolve("octop://app");
   await remote;
   await rejected;
-  assert.deepEqual(trace, ["stop-owned-only", "preparing", "remote-health", "stop-owned-only"]);
+  assert.deepEqual(trace, ["stop-owned-only", "preparing", "stop-owned-only", "remote-health", "stop-owned-only"]);
   assert.equal(store.get().activeUrl, B);
 });
 
@@ -281,4 +283,137 @@ test("a prepared but superseded candidate is disposed without activation or defa
   assert.deepEqual(trace, ["dispose-old"]);
   assert.equal(controller.current()!.url, B);
   assert.equal(store.get().activeUrl, B);
+});
+
+test("failed local page or default persistence releases its newly started backend", async (t) => {
+  for (const failure of ["page", "save"]) {
+    await t.test(failure, async (t) => {
+      let running = false;
+      const { controller, store, hooks } = fixture(t, {
+        startLocal: async () => { running = true; return "octop://app"; },
+        stopLocal: async () => { running = false; },
+      });
+      await controller.connect(A);
+      if (failure === "page") hooks.prepare = async () => { throw new Error("page failed"); };
+      else store.remember = () => { throw new Error("save failed"); };
+      await assert.rejects(controller.connect(""), /failed/);
+      assert.equal(running, false, "an uncommitted local candidate must not retain a backend");
+      assert.equal(controller.current()!.url, A);
+      assert.equal(store.get().activeUrl, A);
+    });
+  }
+});
+
+test("cancelled local page cleanup completes before a failing remote probe", async (t) => {
+  let running = false;
+  const localPage = deferred<PreparedConnection>();
+  const { controller, hooks } = fixture(t, {
+    startLocal: async () => { running = true; return "octop://app"; },
+    stopLocal: async () => { running = false; },
+    prepare: (target) => target.mode === "local" ? localPage.promise : Promise.resolve(candidate()),
+  });
+  await controller.connect(A);
+  const local = controller.connect("");
+  const rejected = assert.rejects(local, /取消/);
+  await setImmediate();
+  assert.equal(running, true);
+  hooks.checkRemote = async () => {
+    assert.equal(running, false, "a superseded local attempt must finish its cleanup first");
+    throw new Error("remote unavailable");
+  };
+  await assert.rejects(controller.connect(B), /remote unavailable/);
+  await rejected;
+  assert.equal(running, false);
+  assert.equal(controller.current()!.url, A);
+  localPage.resolve(candidate());
+  await setImmediate();
+});
+
+test("a late cancelled local start is cleaned before its local successor can spawn", async (t) => {
+  const firstStart = deferred<string>();
+  const cleanup = deferred<void>();
+  let starts = 0;
+  let stops = 0;
+  const { controller } = fixture(t, {
+    startLocal: async () => ++starts === 1 ? firstStart.promise : "octop://app",
+    stopLocal: async () => { if (++stops === 2) await cleanup.promise; },
+  });
+  const first = controller.connect("");
+  const rejected = assert.rejects(first, /取消/);
+  await setImmediate();
+  const next = controller.connect("");
+  firstStart.resolve("octop://app");
+  await setImmediate();
+  assert.equal(stops, 2);
+  assert.equal(starts, 1, "the next spawn must wait for the cancelled process to stop");
+  cleanup.resolve();
+  await rejected;
+  await next;
+  assert.equal(starts, 2);
+  assert.equal(controller.current()!.url, "octop://app");
+});
+
+test("remembering an active temporary local connection preserves its running backend", async (t) => {
+  const { controller, store, calls, hooks } = fixture(t);
+  await controller.connect(A);
+  await controller.temporaryLocal();
+  assert.equal(store.get().activeUrl, A);
+  calls.length = 0;
+  await controller.connect("");
+  assert.equal(store.get().activeUrl, "");
+  assert.equal(controller.current()!.url, "octop://app");
+  assert.equal(hooks.isLocalRunning(), true);
+  assert.deepEqual(calls, ["prepare:local:octop://app"]);
+});
+
+test("a failed local reselection leaves the existing local backend usable", async (t) => {
+  for (const failure of ["page", "save"]) {
+    await t.test(failure, async (t) => {
+      const { controller, store, calls, hooks } = fixture(t);
+      await controller.connect(A);
+      await controller.temporaryLocal();
+      calls.length = 0;
+      if (failure === "page") hooks.prepare = async () => { throw new Error("page failed"); };
+      else store.remember = () => { throw new Error("save failed"); };
+      await assert.rejects(controller.connect(""), /failed/);
+      assert.equal(hooks.isLocalRunning(), true);
+      assert.equal(controller.current()!.url, "octop://app");
+      assert.equal(store.get().activeUrl, A);
+      assert.ok(!calls.includes("stop-owned"));
+      assert.ok(!calls.includes("spawn-owned"));
+    });
+  }
+});
+
+test("retrying a crashed local backend still spawns a replacement", async (t) => {
+  const { controller, calls, hooks } = fixture(t);
+  await controller.connect("");
+  hooks.isLocalRunning = () => false;
+  calls.length = 0;
+  await controller.retry();
+  assert.deepEqual(calls, ["stop-owned", "spawn-owned", "prepare:local:octop://app"]);
+});
+
+test("cancelling a reused local page never stops the current local backend", async (t) => {
+  const { controller, hooks, calls } = fixture(t);
+  await controller.connect("");
+  const page = deferred<PreparedConnection>();
+  hooks.prepare = () => page.promise;
+  hooks.checkRemote = async () => { throw new Error("remote unavailable"); };
+  calls.length = 0;
+  const local = controller.connect("");
+  const cancelled = assert.rejects(local, /取消/);
+  await setImmediate();
+  await assert.rejects(controller.connect(B), /remote unavailable/);
+  await cancelled;
+  assert.equal(hooks.isLocalRunning(), true);
+  assert.equal(controller.current()!.url, "octop://app");
+  assert.deepEqual(calls, []);
+  let disposed = false;
+  page.resolve({
+    activate: () => assert.fail("a cancelled page cannot activate"),
+    dispose: () => { disposed = true; },
+  });
+  await setImmediate();
+  assert.equal(disposed, true);
 });

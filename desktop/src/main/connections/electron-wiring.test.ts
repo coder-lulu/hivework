@@ -39,6 +39,7 @@ function fixture(t: TestContext, options: {
   probe?: (url: string) => Promise<Response>;
   page?: (url: string) => Promise<void>;
   managerPage?: Promise<void>;
+  local?: boolean;
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "hivework-electron-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -55,8 +56,13 @@ function fixture(t: TestContext, options: {
   let rejectWrites = false;
   const probes: string[] = [];
   const windows: Window[] = [];
+  const closedErrors: unknown[] = [];
   class Contents extends EventEmitter {
-    id = ++sequence;
+    private readonly contentsId = ++sequence;
+    get id() {
+      if (this.isDestroyed()) throw new TypeError("Object has been destroyed");
+      return this.contentsId;
+    }
     url = "";
     mainFrame = { url: "", parent: null };
     sent: { channel: string; payload: unknown[] }[] = [];
@@ -96,7 +102,11 @@ function fixture(t: TestContext, options: {
     show() { this.shown = true; }
     hide() { this.shown = false; }
     focus() {}
-    destroy() { this.destroyed = true; this.emit("closed"); }
+    destroy() {
+      this.destroyed = true;
+      try { this.emit("closed"); }
+      catch (error) { closedErrors.push(error); throw error; }
+    }
     setAutoHideMenuBar() {}
     setMenuBarVisibility() {}
   }
@@ -142,7 +152,7 @@ function fixture(t: TestContext, options: {
     },
   };
   const processMock = {
-    env: { ...process.env, OCTOP_HOME: root, OCTOP_DESKTOP_URL: "", OCTOP_PORTABLE_DIR: "" },
+    env: { ...process.env, OCTOP_HOME: root, OCTOP_DESKTOP_URL: "", OCTOP_PORTABLE_DIR: options.local ? root : "" },
     platform: "win32",
     arch: "x64",
     execPath: process.execPath,
@@ -150,6 +160,10 @@ function fixture(t: TestContext, options: {
     versions: process.versions,
     on() {},
   };
+  const child = Object.assign(new EventEmitter(), {
+    stdout: new EventEmitter(), stderr: new EventEmitter(),
+    pid: 12345, exitCode: null as number | null, signalCode: null,
+  });
   runInNewContext(bundle, {
     require: (id: string) => {
       if (id === "electron") return electron;
@@ -163,7 +177,18 @@ function fixture(t: TestContext, options: {
       if (id === "node:child_process") return {
         ...require(id),
         execFileSync: () => "",
-        spawn: () => { spawned += 1; throw new Error("unexpected local process"); },
+        spawn: (executable: string) => {
+          if (!options.local) throw new Error("unexpected local process");
+          if (executable === "taskkill") {
+            void Promise.resolve().then(() => {
+              child.exitCode = 0;
+              child.emit("exit", 0, null);
+            });
+            return new EventEmitter();
+          }
+          spawned += 1;
+          return child;
+        },
       };
       return require(id);
     },
@@ -206,6 +231,7 @@ function fixture(t: TestContext, options: {
     profiles,
     probes,
     windows,
+    closedErrors,
     manager,
     invoke,
     handlers,
@@ -216,6 +242,7 @@ function fixture(t: TestContext, options: {
     relaunched: () => relaunched,
     failWrites: () => { rejectWrites = true; },
     counters: () => ({ spawned, keychain, registeredProtocol }),
+    localRunning: () => spawned > 0 && child.exitCode === null,
   };
 }
 
@@ -375,4 +402,74 @@ test("actual atomic save failure disposes hidden candidate and never destroys/sh
   assert.equal(state.currentUrl, "https://a.example");
   assert.equal((await f.invoke(old, CONNECTION_IPC.current) as { url: string }).url, "https://a.example");
   await assert.rejects(f.invoke(rejected, CONNECTION_IPC.current));
+});
+
+test("disposing the splash never reads the destroyed WebContents during startup", async (t) => {
+  const f = fixture(t);
+  await f.boot();
+  assert.deepEqual(f.closedErrors, [], "closed callbacks must not touch destroyed native objects");
+  assert.equal(f.windows[0]!.destroyed, true);
+  assert.equal(f.manager().shown, true);
+});
+
+test("failed local pages discard their candidate and stop the sidecar while retaining the remote", async (t) => {
+  const f = fixture(t, {
+    local: true,
+    active: "https://a.example",
+    page: async (url) => {
+      if (url.startsWith("octop:")) throw new Error("local page failed");
+    },
+  });
+  await f.boot();
+  const remote = f.windows.find((win) => win.webContents.url === "https://a.example/")!;
+  await assert.rejects(f.invoke(f.manager(), CONNECTION_IPC.manager, "ConnectServer", ""), /local page failed/);
+  const local = f.windows.find((win) => win.webContents.url.startsWith("octop://app/"))!;
+  assert.ok(local, "local startup loads the packaged dashboard");
+  assert.equal(local.destroyed, true);
+  assert.equal(remote.destroyed, false);
+  assert.equal(remote.shown, true);
+  assert.equal(f.localRunning(), false);
+  assert.equal(f.counters().spawned, 1);
+});
+
+test("local preparation failures expose readable recovery text instead of a JSON error payload", async (t) => {
+  const f = fixture(t);
+  await f.boot();
+  await assert.rejects(f.invoke(f.manager(), CONNECTION_IPC.manager, "ConnectServer", ""));
+  const state = await f.invoke(f.manager(), CONNECTION_IPC.manager, "GetServerConnections") as ServerManagerState;
+  assert.equal(state.connectionPhase, "failed");
+  assert.ok(state.connectionError.startsWith("准备便携运行时"));
+  assert.ok(state.connectionError.includes("\n"));
+  assert.ok(!state.connectionError.includes('{"message":'));
+  assert.ok(!state.connectionError.includes("\\\\"));
+});
+
+test("reselecting the active local service does not kill or respawn its sidecar", async (t) => {
+  const f = fixture(t, { local: true, active: "https://a.example" });
+  await f.boot();
+  await f.invoke(f.manager(), CONNECTION_IPC.manager, "ConnectLocalTemporarily");
+  assert.equal(f.localRunning(), true);
+  assert.equal(JSON.parse(readFileSync(f.profiles, "utf8")).activeUrl, "https://a.example");
+  await f.invoke(f.manager(), CONNECTION_IPC.manager, "ConnectServer", "");
+  assert.equal(f.counters().spawned, 1, "remembering local must preserve the running sidecar");
+  assert.equal(f.localRunning(), true);
+  assert.equal(JSON.parse(readFileSync(f.profiles, "utf8")).activeUrl, "");
+});
+
+test("a failed local reselection keeps the old local window and its sidecar alive", async (t) => {
+  let localPages = 0;
+  const f = fixture(t, {
+    local: true,
+    active: "",
+    page: async (url) => {
+      if (url.startsWith("octop:") && ++localPages > 1) throw new Error("local page failed");
+    },
+  });
+  await f.boot();
+  const old = f.windows.find((win) => win.webContents.url.startsWith("octop://app/"))!;
+  await assert.rejects(f.invoke(f.manager(), CONNECTION_IPC.manager, "ConnectServer", ""), /local page failed/);
+  assert.equal(old.destroyed, false);
+  assert.equal(old.shown, true);
+  assert.equal(f.localRunning(), true);
+  assert.equal(f.counters().spawned, 1);
 });

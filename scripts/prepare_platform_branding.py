@@ -60,11 +60,11 @@ def generate_assets() -> None:
             shutil.copyfile(source, staging / name)
     shutil.copyfile(
         SOURCE / "icons/app-icon-orange-48.png",
-        ROOT / "src/octop/infra/desktop/scripts/linux/v1.0/start-menu.png",
+        ROOT / "src/octop/infra/control/desktop/scripts/linux/v1.0/start-menu.png",
     )
     shutil.copyfile(
         SOURCE / "wallpapers/hivework-tech.png",
-        ROOT / "src/octop/infra/desktop/scripts/linux/v1.0/wallpaper.png",
+        ROOT / "src/octop/infra/control/desktop/scripts/linux/v1.0/wallpaper.png",
     )
 
 
