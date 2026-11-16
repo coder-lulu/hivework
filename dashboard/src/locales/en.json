@@ -5978,7 +5978,7 @@
       "continue": "Continue",
       "alreadyCreated": "Administrator \"{{username}}\" has been created.",
       "intro": "Create the first administrator account.",
-      "introNoPassword": "Name the account on this device. No password is needed."
+      "introNoPassword": "Name the account on this device. A login password will be generated for you to copy and save when setup finishes."
     },
     "model": {
       "intro": "Configure one model provider so the assistant can reply. You can skip this step and configure it later.",
@@ -6010,7 +6010,10 @@
       "running": "Setting up your workspace…",
       "loginFailed": "Auto-login failed. Please log in manually.",
       "providerFailed": "Could not save the provider just now. Open the Models page after login to retry.",
-      "fallbackToLogin": "Skip and go to login"
+      "fallbackToLogin": "Skip and go to login",
+      "credentialsTitle": "Your local account is ready",
+      "credentialsHint": "This generated login password is shown only during this setup. Copy and save it somewhere safe. You can change it later in account settings.",
+      "savedAndContinue": "I saved my password — open workspace"
     }
   },
   "storage": {
@@ -6265,18 +6268,18 @@
     "localSignInFailed": "Could not sign in to the local account",
     "forgotPassword": "Forgot password?",
     "forgotPasswordTitle": "Reset password",
-    "forgotPasswordHelp": "Ask an administrator to reset it under Users. If you manage this host, run the command below on the machine where Octop is installed, using the same OS account that runs the service.",
-    "forgotPasswordCommand": "octop user passwd <username> --password <new-password>",
-    "forgotPasswordHint": "You can omit --password to enter it interactively. New password: at least 8 characters with letters and digits.",
+    "forgotPasswordHelp": "Ask an administrator to reset it under Users. If you manage this host, run the command below on the machine where HiveWork is installed, using the same OS account that runs the service.",
+    "forgotPasswordCommand": "hivework user passwd <username>",
+    "forgotPasswordHint": "Enter the new password when prompted; input is hidden. You can also pass it with --password. Use at least 8 characters with letters and digits.",
     "forgotPasswordLinux": "Open Terminal, then run the command above. If octop is not found:",
     "forgotPasswordMac": "Open Terminal (Applications → Utilities → Terminal), then run the command above. If octop is not found:",
     "forgotPasswordUnixPath": "~/.octop/bin/octop user passwd <username> --password <new-password>",
-    "forgotPasswordWindows": "Open PowerShell or Command Prompt, then run the command above. If octop is not found:",
-    "forgotPasswordWindowsPs": "& \"$env:USERPROFILE\\.octop\\bin\\octop.cmd\" user passwd <username> --password <new-password>",
+    "forgotPasswordWindows": "After installing or upgrading, reopen PowerShell or Command Prompt. If hivework is not found, replace <install-directory> below with the actual location, such as D:\\HiveWork:",
+    "forgotPasswordWindowsPs": "& \"<install-directory>\\bin\\hivework.cmd\" user passwd \"<username>\"",
     "forgotPasswordWindowsCmdLabel": "Command Prompt",
-    "forgotPasswordWindowsCmd": "%USERPROFILE%\\.octop\\bin\\octop.cmd user passwd <username> --password <new-password>",
+    "forgotPasswordWindowsCmd": "\"<install-directory>\\bin\\hivework.cmd\" user passwd \"<username>\"",
     "forgotPasswordDocker": "Enter the container, then run:",
-    "forgotPasswordDockerCommand": "docker exec -it <container> octop user passwd <username> --password <new-password>",
+    "forgotPasswordDockerCommand": "docker exec -it <container> hivework user passwd <username>",
     "forgotPasswordOk": "Got it",
     "failed": "Login failed",
     "slideHint": "Slide to the end to verify",

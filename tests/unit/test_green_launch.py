@@ -36,6 +36,7 @@ def test_bootstrap_prepends_interpreter_dir_to_path(
     module = _load_launch_module()
     module.__file__ = str(tmp_path / "launch.py")
     monkeypatch.delenv("PYTHONPATH", raising=False)
+    monkeypatch.setattr(sys, "path", sys.path.copy())
     monkeypatch.setattr(sys, "executable", str(executable))
     if parent_path is None:
         monkeypatch.delenv("PATH", raising=False)
@@ -99,6 +100,65 @@ def test_bootstrap_exposes_bundled_packages_to_python_subprocesses(
         assert os.environ["PYTHONPATH"].split(os.pathsep)[-1] == str(custom)
     module._bootstrap()
     assert os.environ["PYTHONPATH"].split(os.pathsep).count(str(packages)) == 1
+
+
+@pytest.mark.parametrize("foreign_source", ["user-site", "pythonpath", "pythonpath-bundle-last"])
+def test_launch_prefers_bundled_dependencies(tmp_path: Path, foreign_source: str) -> None:
+    launch = tmp_path / "launch.py"
+    launch.write_text(inspect.getsource(_load_launch_module()), encoding="utf-8")
+    packages = tmp_path / "packages"
+    octop = packages / "octop"
+    octop.mkdir(parents=True)
+    (octop / "__init__.py").write_text("", encoding="utf-8")
+    (octop / "__main__.py").write_text(
+        "import subprocess\n"
+        "import sys\n"
+        "import portable_dependency\n"
+        "print(portable_dependency.origin, flush=True)\n"
+        "subprocess.run([sys.executable, '-c', "
+        "'import portable_dependency; print(portable_dependency.origin)'], check=True)\n",
+        encoding="utf-8",
+    )
+    (packages / "portable_dependency.py").write_text("origin = 'bundled'\n", encoding="utf-8")
+    env = os.environ.copy()
+    for name in ("PYTHONHOME", "PYTHONPATH", "PYTHONNOUSERSITE"):
+        env.pop(name, None)
+    env["PYTHONUSERBASE"] = str(tmp_path / "userbase")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    # A base interpreter enables user site-packages, unlike a typical test venv.
+    executable = getattr(sys, "_base_executable", sys.executable)
+    if foreign_source == "user-site":
+        user_site = subprocess.run(
+            [executable, "-c", "import site; print(site.getusersitepackages())"],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+            timeout=15,
+        )
+        foreign = Path(user_site.stdout.strip())
+    else:
+        foreign = tmp_path / "external"
+        env["PYTHONPATH"] = str(foreign)
+        if foreign_source == "pythonpath-bundle-last":
+            env["PYTHONPATH"] += os.pathsep + str(packages)
+    foreign.mkdir(parents=True)
+    (foreign / "portable_dependency.py").write_text("origin = 'foreign'\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [executable, str(launch)],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=15,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == ["bundled", "bundled"]
 
 
 def test_launch_has_no_provider_seed() -> None:

@@ -10,6 +10,7 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 from octop.infra.setup.password_file import WIZARD_FILE_NAME, read_password
@@ -123,6 +124,7 @@ async def test_initial_admin_without_password_when_the_gate_is_off(
         body = r.json()
         assert body["username"] == "local"
         assert body["role"] == "admin"
+        assert "generated_password" not in body
 
         # The row keeps a hashed credential nobody knows, so empty-password
         # login cannot walk in; the issued token is the only way to /auth/me.
@@ -136,6 +138,62 @@ async def test_initial_admin_without_password_when_the_gate_is_off(
         )
         assert r.status_code == 200
         assert r.json()["username"] == "local"
+
+
+@pytest.mark.parametrize(
+    ("desktop", "host", "provided", "expose_password"),
+    [
+        (True, "127.0.0.1", None, True),
+        (True, "::1", None, True),
+        (False, "127.0.0.1", None, False),
+        (True, "198.51.100.7", None, False),
+        (True, "127.0.0.1", "LocalSetupPass123!", False),
+    ],
+)
+async def test_generated_password_is_returned_once_only_for_local_desktop_setup(
+    tmp_octop_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    desktop: bool,
+    host: str,
+    provided: str | None,
+    expose_password: bool,
+) -> None:
+    write_octop_config(tmp_octop_home, require_setup_password=False)
+    monkeypatch.setenv("OCTOP_DESKTOP_SHELL", "1" if desktop else "0")
+    async with octop_client(tmp_octop_home) as (client, srv):
+        transport = httpx.ASGITransport(app=client._octop_app, client=(host, 12345))
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
+            token = (await c.post("/api/setup/begin")).json()["wizard_token"]
+            headers = {"Authorization": f"Bearer {token}"}
+            payload = {"username": "local"}
+            if provided:
+                payload["password"] = provided
+            response = await c.post("/api/setup/initial-admin", json=payload, headers=headers)
+            assert response.status_code == 201
+            assert response.headers["cache-control"] == "no-store"
+            body = response.json()
+            if expose_password:
+                password = body["generated_password"]
+                assert len(password) >= 32
+                assert any(char.isalpha() for char in password)
+                assert any(char.isdigit() for char in password)
+                row = srv.services.user_repo.get(body["id"])
+                assert row.password_hash != password
+                login = await c.post(
+                    "/api/auth/login", json={"username": "local", "password": password}
+                )
+                assert login.status_code == 200
+                status = await c.get("/api/setup/status")
+                assert password not in status.text
+                me = await c.get(
+                    "/api/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"}
+                )
+                assert password not in me.text
+            else:
+                assert "generated_password" not in body
+            replay = await c.post("/api/setup/initial-admin", json=payload, headers=headers)
+            assert replay.status_code >= 400
+            assert "generated_password" not in replay.json()
 
 
 async def test_initial_admin_respects_locale_body(env: Any) -> None:

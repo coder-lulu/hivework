@@ -54,6 +54,41 @@ octop_files_done:
   System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 !macroend
 
+; Use .NET registry APIs rather than NSIS strings or setx: PATH can exceed the
+; installer string limit, and REG_EXPAND_SZ references must remain unexpanded.
+; The script is outside asar and is called before uninstall removes app files.
+!macro hiveworkUpdateCliPath action
+  Push $0
+  Push $1
+  Push $2
+  StrCpy $0 "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
+  ${IfNot} ${FileExists} "$0"
+    StrCpy $0 "$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
+  ${EndIf}
+  StrCpy $1 "User"
+  ${If} $installMode == "all"
+    StrCpy $1 "Machine"
+  ${EndIf}
+  nsExec::ExecToLog '"$0" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\resources\hivework-path.ps1" -Action ${action} -Scope "$1" -InstallDirectory "$INSTDIR"'
+  Pop $2
+  ${If} $2 != "0"
+    ${If} $LANGUAGE == 2052
+      MessageBox MB_OK|MB_ICONSTOP "无法更新 hivework 命令的 PATH（$2）。请检查安装权限后重试。" /SD IDOK
+    ${Else}
+      MessageBox MB_OK|MB_ICONSTOP "Could not update PATH for the hivework command ($2). Check installation permissions and retry." /SD IDOK
+    ${EndIf}
+    Pop $2
+    Pop $1
+    Pop $0
+    Abort "HiveWork CLI PATH update failed."
+  ${EndIf}
+  ; HWND_BROADCAST + WM_SETTINGCHANGE. Existing terminals need to be reopened.
+  SendMessage 0xffff 0x001a 0 "STR:Environment" /TIMEOUT=5000
+  Pop $2
+  Pop $1
+  Pop $0
+!macroend
+
 ; Finish page: keep "run" and add the desktop-shortcut checkbox.
 ; Fresh installs start checked. Updates start unchecked so a removed
 ; shortcut is not put back unless the user asks.
@@ -248,6 +283,7 @@ octop_rt_ok_zh:
 octop_rt_ok_en:
   DetailPrint "Python runtime is ready."
 octop_rt_ok_done:
+  !insertmacro hiveworkUpdateCliPath Install
   Pop $5
   Pop $4
   Pop $3
@@ -274,6 +310,7 @@ octop_rt_end:
 !macroend
 
 !macro customUnInstall
+  !insertmacro hiveworkUpdateCliPath Remove
   IfFileExists "$newDesktopLink" 0 octop_un_old_link
     WinShell::UninstShortcut "$newDesktopLink"
     Delete "$newDesktopLink"

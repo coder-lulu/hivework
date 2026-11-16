@@ -41,19 +41,19 @@ export default function ForgotPasswordModal({ open, onClose }: Props) {
         <p className={styles.help}>
           {t(
             "login.forgotPasswordHelp",
-            "Ask an administrator to reset it under Users. If you manage this host, run the command below on the machine where Octop is installed, using the same OS account that runs the service.",
+            "Ask an administrator to reset it under Users. If you manage this host, run the command below on the machine where HiveWork is installed, using the same OS account that runs the service.",
           )}
         </p>
         <CopyCommand
           text={t(
             "login.forgotPasswordCommand",
-            "octop user passwd <username> --password <new-password>",
+            "hivework user passwd <username>",
           )}
         />
         <p className={styles.hint}>
           {t(
             "login.forgotPasswordHint",
-            "You can omit --password to enter it interactively. New password: at least 8 characters with letters and digits.",
+            "Enter the new password when prompted; input is hidden. You can also pass it with --password. Use at least 8 characters with letters and digits.",
           )}
         </p>
         <Segmented<Platform>
@@ -85,7 +85,7 @@ function PlatformHelp({ platform }: { platform: Platform }) {
         <CopyCommand
           text={t(
             "login.forgotPasswordDockerCommand",
-            "docker exec -it <container> octop user passwd <username> --password <new-password>",
+            "docker exec -it <container> hivework user passwd <username>",
           )}
         />
       </div>
@@ -98,7 +98,7 @@ function PlatformHelp({ platform }: { platform: Platform }) {
         <p className={styles.note}>
           {t(
             "login.forgotPasswordWindows",
-            "Open PowerShell or Command Prompt, then run the command above. If octop is not found:",
+            "After installing or upgrading, reopen PowerShell or Command Prompt. If hivework is not found, replace <install-directory> below with the actual location, such as D:\\HiveWork:",
           )}
         </p>
         <div className={styles.fallback}>
@@ -106,7 +106,7 @@ function PlatformHelp({ platform }: { platform: Platform }) {
           <CopyCommand
             text={t(
               "login.forgotPasswordWindowsPs",
-              '& "$env:USERPROFILE\\.octop\\bin\\octop.cmd" user passwd <username> --password <new-password>',
+              '& "<install-directory>\\bin\\hivework.cmd" user passwd "<username>"',
             )}
           />
           <p className={styles.label}>
@@ -115,7 +115,7 @@ function PlatformHelp({ platform }: { platform: Platform }) {
           <CopyCommand
             text={t(
               "login.forgotPasswordWindowsCmd",
-              "%USERPROFILE%\\.octop\\bin\\octop.cmd user passwd <username> --password <new-password>",
+              '"<install-directory>\\bin\\hivework.cmd" user passwd "<username>"',
             )}
           />
         </div>

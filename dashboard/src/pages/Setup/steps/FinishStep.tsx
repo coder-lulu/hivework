@@ -15,7 +15,7 @@ import {
 import type { ProviderDraft } from "../wizardClient";
 import type { AdminCreds } from "./AdminStep";
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 interface Props {
   adminCreds: AdminCreds;
@@ -34,6 +34,7 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
     let cancelled = false;
     (async () => {
       const wizardToken = await resolveSetupProbeToken();
+      if (cancelled) return;
 
       if (wizardToken) {
         try {
@@ -52,10 +53,11 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
       } else if (!wizardToken && !cancelled) {
         setErrors((s) => ({
           ...s,
-          provider: t("wizard.sessionExpired"),
+          provider: "session-expired",
         }));
       }
 
+      if (cancelled) return;
       try {
         if (adminCreds.password) {
           const r = await authApi.login(
@@ -63,7 +65,7 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
             adminCreds.password,
           );
           if (isMfaChallenge(r)) {
-            throw new Error(t("login.mfaTitle"));
+            throw new Error("mfa-required");
           }
           setAuthToken(r.access_token);
           await applyUserLocale(r.user.locale);
@@ -71,7 +73,7 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
         } else {
           // No password gate: the JWT minted at initial-admin is the session.
           const token = wizardSession.loadSetupJwt();
-          if (!token) throw new Error(t("wizard.sessionExpired"));
+          if (!token) throw new Error("session-expired");
           setAuthToken(token);
           const me = await authApi.me();
           await applyUserLocale(me.locale);
@@ -88,18 +90,20 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
         return;
       }
 
-      wizardSession.clearAll();
       if (!cancelled) {
+        wizardSession.clearAll();
         setRunning(false);
-        setTimeout(() => {
-          if (!cancelled) navigate("/chat", { replace: true });
-        }, 400);
+        if (!adminCreds.generatedPassword) {
+          setTimeout(() => {
+            if (!cancelled) navigate("/chat", { replace: true });
+          }, 400);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [adminCreds, providerDraft, navigate, t]);
+  }, [adminCreds, providerDraft, navigate]);
 
   if (running && !errors.login) {
     return (
@@ -112,6 +116,29 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
 
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="middle">
+      {adminCreds.generatedPassword && (
+        <>
+          <Alert
+            type="success"
+            showIcon
+            message={t("wizard.finish.credentialsTitle")}
+            description={t("wizard.finish.credentialsHint")}
+          />
+          <div>
+            <Text type="secondary">{t("wizard.admin.username")}</Text>
+            <Paragraph copyable>{adminCreds.username}</Paragraph>
+            <Text type="secondary">{t("wizard.admin.password")}</Text>
+            <Paragraph
+              copyable={{ text: adminCreds.generatedPassword }}
+              style={{ wordBreak: "break-all", marginBottom: 0 }}
+            >
+              <Text code style={{ whiteSpace: "normal" }}>
+                {adminCreds.generatedPassword}
+              </Text>
+            </Paragraph>
+          </div>
+        </>
+      )}
       {errors.login && (
         <Alert type="error" showIcon message={t("wizard.finish.loginFailed")} />
       )}
@@ -122,16 +149,26 @@ export default function FinishStep({ adminCreds, providerDraft }: Props) {
           message={t("wizard.finish.providerFailed")}
         />
       )}
-      <Button
-        type="primary"
-        block
-        onClick={() => {
-          wizardSession.clearAll();
-          navigate("/login", { replace: true });
-        }}
-      >
-        {t("wizard.finish.fallbackToLogin")}
-      </Button>
+      {adminCreds.generatedPassword && !errors.login ? (
+        <Button
+          type="primary"
+          block
+          onClick={() => navigate("/chat", { replace: true })}
+        >
+          {t("wizard.finish.savedAndContinue")}
+        </Button>
+      ) : (
+        <Button
+          type="primary"
+          block
+          onClick={() => {
+            wizardSession.clearAll();
+            navigate("/login", { replace: true });
+          }}
+        >
+          {t("wizard.finish.fallbackToLogin")}
+        </Button>
+      )}
     </Space>
   );
 }

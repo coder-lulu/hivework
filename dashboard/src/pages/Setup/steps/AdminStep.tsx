@@ -25,6 +25,8 @@ interface FormValues {
 export interface AdminCreds {
   username: string;
   password: string | null;
+  /** Kept in component memory until the local user saves it and leaves setup. */
+  generatedPassword?: string;
 }
 
 interface Props {
@@ -90,7 +92,11 @@ export default function AdminStep({
       wizardSession.saveSetupJwt(created.access_token);
       // So mid-wizard locale / preferences API calls can authenticate.
       setAuthToken(created.access_token);
-      onCreated({ username: values.username, password });
+      onCreated({
+        username: values.username,
+        password,
+        generatedPassword: created.generated_password,
+      });
     } catch (e) {
       setError(apiErrorMessage(e, t("wizard.admin.submitFailed"), t));
     } finally {

@@ -106,6 +106,7 @@ dev = [
 
 [project.scripts]
 octop = "octop.cli.main:cli"
+hivework = "octop.cli.main:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/octop"]

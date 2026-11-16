@@ -32,14 +32,17 @@ def _bootstrap() -> Path:
         sys.stderr.write(f"launch.py: packages/ missing next to {root}\n")
         raise SystemExit(1)
 
-    # Process .pth files (required for pywin32 layout).
-    site.addsitedir(str(packages))
+    # Bundled dependencies must win over user site-packages and PYTHONPATH.
+    # Prepend before processing .pth files, whose hooks may import dependencies.
+    packages_s = str(packages)
+    sys.path[:] = [packages_s] + [entry for entry in sys.path if entry != packages_s]
+    site.addsitedir(packages_s)
     # Python subprocesses do not inherit additions to the parent's sys.path.
     pythonpath = os.environ.get("PYTHONPATH", "")
-    if str(packages) not in pythonpath.split(os.pathsep):
-        os.environ["PYTHONPATH"] = (
-            str(packages) + os.pathsep + pythonpath if pythonpath else str(packages)
-        )
+    inherited_paths = pythonpath.split(os.pathsep) if pythonpath else []
+    os.environ["PYTHONPATH"] = os.pathsep.join(
+        [packages_s] + [entry for entry in inherited_paths if entry != packages_s]
+    )
 
     if sys.platform == "win32":
         dll_dir = packages / "pywin32_system32"

@@ -162,6 +162,8 @@ export const wizardApi = {
       role: string;
       access_token: string;
       expires_in: number;
+      /** Only returned once for a generated local desktop password. */
+      generated_password?: string;
     }>("/setup/initial-admin", {
       method: "POST",
       body: JSON.stringify(body),

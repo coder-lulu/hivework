@@ -75,6 +75,8 @@ export default {
   },
   win: {
     icon: "resources/icon.ico",
+    extraFiles: [{ from: "build/hivework.cmd", to: "bin/hivework.cmd" }],
+    extraResources: [{ from: "build/hivework-path.ps1", to: "hivework-path.ps1" }],
     // CI passes the native runner architecture, never cross-package both here.
     target: ["nsis"],
   },

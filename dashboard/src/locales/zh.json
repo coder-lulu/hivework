@@ -5978,7 +5978,7 @@
       "continue": "继续",
       "alreadyCreated": "管理员「{{username}}」已创建。",
       "intro": "创建第一个管理员账户。",
-      "introNoPassword": "为这台设备上的账户命名，无需设置密码。"
+      "introNoPassword": "为这台设备上的账户命名。系统将自动生成登录密码，完成设置后请复制保存。"
     },
     "model": {
       "intro": "配置一个模型提供商，助手就可以回应你了。你也可以跳过本步，稍后在「模型」页配置。",
@@ -6010,7 +6010,10 @@
       "running": "正在准备工作区…",
       "loginFailed": "自动登录失败，请手动登录。",
       "providerFailed": "提供商保存失败，登录后请到「模型」页重试。",
-      "fallbackToLogin": "跳过并去登录"
+      "fallbackToLogin": "跳过并去登录",
+      "credentialsTitle": "本地账户已就绪",
+      "credentialsHint": "这是自动生成的登录密码，仅在本次设置中显示。请复制并妥善保存，也可稍后在账户设置中修改密码。",
+      "savedAndContinue": "我已保存密码，进入工作区"
     }
   },
   "storage": {
@@ -6265,18 +6268,18 @@
     "localSignInFailed": "无法登录本地账户",
     "forgotPassword": "忘记密码？",
     "forgotPasswordTitle": "重置密码",
-    "forgotPasswordHelp": "请联系管理员在「用户」页重置。若你维护本机，在安装了 Octop 的电脑上，用运行服务的同一账户执行：",
-    "forgotPasswordCommand": "octop user passwd <用户名> --password <新密码>",
-    "forgotPasswordHint": "可省略 --password，改为交互输入。新密码至少 8 位，需同时包含字母和数字。",
+    "forgotPasswordHelp": "请联系管理员在「用户」页重置。若你维护本机，在安装了 HiveWork 的电脑上，用运行服务的同一账户执行：",
+    "forgotPasswordCommand": "hivework user passwd <用户名>",
+    "forgotPasswordHint": "按提示输入新密码，输入时不会显示字符。也可通过 --password 显式传入。新密码至少 8 位，需同时包含字母和数字。",
     "forgotPasswordLinux": "打开「终端」后执行上面的命令。若提示找不到 octop，改用：",
     "forgotPasswordMac": "打开「终端」（应用程序 → 实用工具 → 终端）后执行。若提示找不到 octop，改用：",
     "forgotPasswordUnixPath": "~/.octop/bin/octop user passwd <用户名> --password <新密码>",
-    "forgotPasswordWindows": "打开 PowerShell 或「命令提示符」后执行上面的命令。若提示找不到 octop，改用：",
-    "forgotPasswordWindowsPs": "& \"$env:USERPROFILE\\.octop\\bin\\octop.cmd\" user passwd <用户名> --password <新密码>",
+    "forgotPasswordWindows": "安装或升级后，请重新打开 PowerShell 或「命令提示符」再执行。若找不到 hivework，将下方的 <安装目录> 替换为实际位置（例如 D:\\HiveWork）：",
+    "forgotPasswordWindowsPs": "& \"<安装目录>\\bin\\hivework.cmd\" user passwd \"<用户名>\"",
     "forgotPasswordWindowsCmdLabel": "命令提示符",
-    "forgotPasswordWindowsCmd": "%USERPROFILE%\\.octop\\bin\\octop.cmd user passwd <用户名> --password <新密码>",
+    "forgotPasswordWindowsCmd": "\"<安装目录>\\bin\\hivework.cmd\" user passwd \"<用户名>\"",
     "forgotPasswordDocker": "先进入容器再执行：",
-    "forgotPasswordDockerCommand": "docker exec -it <容器名> octop user passwd <用户名> --password <新密码>",
+    "forgotPasswordDockerCommand": "docker exec -it <容器名> hivework user passwd <用户名>",
     "forgotPasswordOk": "知道了",
     "failed": "登录失败",
     "slideHint": "拖动滑块到最右侧完成验证",

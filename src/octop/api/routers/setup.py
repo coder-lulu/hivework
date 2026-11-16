@@ -8,7 +8,7 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import BaseModel, Field
 
 from octop.api.deps import get_server, require_database, resolve_user_from_token, sign_token
@@ -42,8 +42,8 @@ class SetupBody(BaseModel):
         description=(
             "Required while the wizard password gate is on. Optional when "
             "``require_setup_password`` is off: the server then mints an "
-            "unguessable one, so the admin row keeps a hashed credential "
-            "without a password the client has to hold."
+            "unguessable one. Local desktop setup returns it once so the user "
+            "can save it; only its hash is persisted."
         ),
     )
     display_name: str | None = None
@@ -51,6 +51,22 @@ class SetupBody(BaseModel):
     locale: str | None = Field(
         default=None,
         description="UI locale for the initial admin (zh|en). Defaults to Accept-Language.",
+    )
+
+
+class InitialAdminResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+    locale: str
+    access_token: str
+    expires_in: int
+    generated_password: str | None = Field(
+        default=None,
+        description=(
+            "One-time generated credential for local desktop setup on loopback only. "
+            "Save it before leaving the wizard; it cannot be retrieved later."
+        ),
     )
 
 
@@ -125,14 +141,14 @@ def _resolve_admin_password(server: Any, provided: str | None) -> str:
     """Return the password to hash for the initial admin.
 
     With the wizard password gate on, the client must supply one. With the gate
-    off (desktop builds), a missing password becomes a random one: the row still
-    carries a real hash, but the JWT issued below is the only way in.
+    off (desktop builds), a missing password becomes a random one. Only its hash
+    is persisted; local desktop setup can return the credential once.
     """
     if provided:
         return provided
     if _setup_password_required(server):
         raise OctopError(ErrorCode.SLASH_BAD_ARGS, "password is required")
-    return secrets.token_urlsafe(32)
+    return f"A1{secrets.token_urlsafe(32)}"
 
 
 def _client_host(request: Request) -> str:
@@ -422,17 +438,25 @@ async def verify_password(
     return {"wizard_token": token, "expires_in": ttl}
 
 
-@router.post("/setup/initial-admin", status_code=201, summary="Create initial admin")
+@router.post(
+    "/setup/initial-admin",
+    status_code=201,
+    summary="Create initial admin",
+    response_model=InitialAdminResponse,
+    response_model_exclude_none=True,
+)
 async def initial_admin(
     body: SetupBody,
     request: Request,
+    response: Response,
     server: Any = Depends(get_server),
     authorization: str | None = Header(default=None),
-) -> dict[str, Any]:
+) -> InitialAdminResponse:
     """Create the first admin user. Default ``main`` agent is created at ``/setup/finish``.
 
     On the desktop shell, the same call may add the ``local`` account when
-    other users already exist. Any other username stays refused.
+    other users already exist. Any other username stays refused. A password
+    generated for local desktop setup is returned once, with caching disabled.
     """
     um = server.user_manager
     existing = um is not None and um.count() != 0
@@ -448,9 +472,10 @@ async def initial_admin(
     from octop.infra.db.repos.user_roles import ADMIN_USER_ROLE_ID, UserRoleRepo
 
     admin_role = UserRoleRepo(server.services.db).get(ADMIN_USER_ROLE_ID)
+    password = _resolve_admin_password(server, body.password)
     user = await server.user_manager.create(
         username=body.username,
-        password=_resolve_admin_password(server, body.password),
+        password=password,
         role=Role.ADMIN,
         display_name=body.display_name,
         email=body.email,
@@ -475,14 +500,18 @@ async def initial_admin(
         mfa_version=mfa_version,
         password_version=password_version,
     )
-    return {
-        "id": user.id,
-        "username": user.username,
-        "role": user.role,
-        "locale": user.locale,
-        "access_token": access_token,
-        "expires_in": ttl,
-    }
+    response.headers["Cache-Control"] = "no-store"
+    return InitialAdminResponse(
+        id=user.id,
+        username=user.username,
+        role=user.role,
+        locale=user.locale,
+        access_token=access_token,
+        expires_in=ttl,
+        generated_password=(
+            password if not body.password and _desktop_local_account(request, server) else None
+        ),
+    )
 
 
 @router.post("/setup/test-provider", summary="Test provider draft connectivity")
