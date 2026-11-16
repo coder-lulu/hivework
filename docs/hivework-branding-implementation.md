@@ -107,7 +107,7 @@ npm --prefix dashboard run build
 uv run --no-sync python scripts/check_branding.py --built
 uv build --wheel --out-dir dist
 uv run --no-sync python scripts/check_branding.py --built --wheel dist/<生成的wheel文件>
-docker build -f docker/Dockerfile -t hivework:local .
+docker build -f deploy/docker/Dockerfile -t hivework:local .
 ```
 
 2026-10-12 的 Logo 替换统一使用用户提供的 `hivework-logo-assets/` PNG 素材。Web 与文档中的标志、README 横版图、桌面应用图标和托盘、FnOS 图标均从该目录复制或按目标尺寸派生。兼容路径中的 SVG 仅是嵌入 PNG 的容器，不是真正的矢量图；放大不会增加原始细节。`desktop/src/build/appicon.png` 已替换为橙色 512 px 图标，macOS 使用橙色 1024 px 素材并保留 824/1024 留白规范。

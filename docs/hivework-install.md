@@ -69,7 +69,7 @@ uv build --wheel --out-dir dist
 Docker 从当前 HiveWork 源码重新构建，前端阶段会显式复制共享品牌资料：
 
 ```sh
-docker build -f docker/Dockerfile -t hivework:local .
+docker build -f deploy/docker/Dockerfile -t hivework:local .
 docker run --rm --entrypoint python hivework:local -c "import json; from importlib.resources import files; p=files('octop'); assert json.loads((p/'branding'/'profile.json').read_text())['id']=='hivework'; assert 'HiveWork' in (p/'dashboard'/'index.html').read_text()"
 ```
 

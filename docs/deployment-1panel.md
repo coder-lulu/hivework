@@ -42,7 +42,7 @@ DNS、可信 HTTPS 和应用升级已验收；当前已有 2 个用户和 1 个�
   保留服务器其他 8 个站点。不启动额外 PostgreSQL、Redis 或反向代理。
 - 应用仅发布 `127.0.0.1:18500`，由 OpenResty 转发到容器 8088。
   PostgreSQL 使用同一 Docker 网络内的 `hive-postgresql:5432`，无需公网开放数据库端口。
-- [Compose 文件](../docker/compose.1panel.yml) 使用本地镜像
+- [Compose 文件](../deploy/docker/compose.1panel.yml) 使用本地镜像
   `hivework:20261012-wallpaper-7ca3d5da`，预期镜像 ID 为
   `sha256:bb6832379e8b3e5cf0128efa6ab725c26b6ec9af60c4ef49347b6bee0b3ce682`。
   当前在线容器保留 `hivework:20261012-assistant-efcfe114` 的桌面会话，其三处壁纸已原子替换并刷新；
@@ -189,7 +189,7 @@ PostgreSQL 已绑定。若验证启动密码后仍显示数据库步骤，点击
 本地仅校验配置时可执行以下命令，无需创建服务器凭据路径：
 
 ```powershell
-docker compose -f docker/compose.1panel.yml config --no-env-resolution --quiet
+docker compose -f deploy/docker/compose.1panel.yml config --no-env-resolution --quiet
 ```
 
 该检查验证 Compose 结构，不验证服务器实际凭据、网络或运行状态。
