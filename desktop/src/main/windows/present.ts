@@ -7,6 +7,7 @@
 export interface PresentableWindow {
   isDestroyed(): boolean;
   isMinimized(): boolean;
+  isVisible(): boolean;
   restore(): void;
   show(): void;
   focus(): void;
@@ -56,14 +57,20 @@ export function isWindowOnScreen(bounds: Rect, workAreas: readonly Rect[]): bool
 }
 
 /**
- * Restore, show, and focus every live window. A minimized or hidden window is
- * still in this list; Dock click does not recreate it. Returns how many were
- * brought forward.
+ * Bring visible windows forward without reopening hidden auxiliary windows.
+ * If everything is hidden or minimized, restore the preferred dashboard, or
+ * the first live window during startup. Returns how many were brought forward.
  */
-export function presentWindows(windows: readonly PresentableWindow[]): number {
+export function presentWindows(
+  windows: readonly PresentableWindow[],
+  preferred?: PresentableWindow | null,
+): number {
+  const live = windows.filter((win) => !win.isDestroyed());
+  const visible = live.filter((win) => win.isVisible());
+  const fallback = preferred && live.includes(preferred) ? preferred : live[0];
+  const targets = visible.length > 0 ? visible : fallback ? [fallback] : [];
   let shown = 0;
-  for (const win of windows) {
-    if (win.isDestroyed()) continue;
+  for (const win of targets) {
     if (win.isMinimized()) win.restore();
     win.show();
     win.focus();

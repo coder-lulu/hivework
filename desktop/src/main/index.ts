@@ -918,11 +918,11 @@ function raiseHiddenWindows(windows: readonly BrowserWindow[]): void {
 function revealAppWindow(): void {
   if (quitting) return;
   const windows = BrowserWindow.getAllWindows();
-  if (presentWindows(windows) > 0) {
+  if (presentWindows(windows, dashboardWindow) > 0) {
     // The click is the user asking for this app. Steal so a hidden window
     // comes forward even when another app was active.
     app.focus({ steal: true });
-    raiseHiddenWindows(windows);
+    raiseHiddenWindows(windows.filter((win) => !win.isDestroyed() && win.isVisible()));
     const areas = screen.getAllDisplays().map((display) => display.workArea);
     if (areas.length === 0) return;
     for (const win of windows) {

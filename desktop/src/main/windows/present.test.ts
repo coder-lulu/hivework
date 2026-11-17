@@ -8,7 +8,11 @@ import {
   type PresentableWindow,
 } from "./present";
 
-function fakeWindow(state: { destroyed?: boolean; minimized?: boolean }): PresentableWindow & {
+function fakeWindow(state: {
+  destroyed?: boolean;
+  minimized?: boolean;
+  visible?: boolean;
+}): PresentableWindow & {
   calls: string[];
 } {
   const calls: string[] = [];
@@ -16,6 +20,7 @@ function fakeWindow(state: { destroyed?: boolean; minimized?: boolean }): Presen
     calls,
     isDestroyed: () => state.destroyed === true,
     isMinimized: () => state.minimized === true,
+    isVisible: () => state.visible ?? !state.minimized,
     restore: () => calls.push("restore"),
     show: () => calls.push("show"),
     focus: () => calls.push("focus"),
@@ -29,7 +34,7 @@ test("Dock click restores a minimized window before showing it", () => {
 });
 
 test("Dock click shows a hidden window without un-maximizing it", () => {
-  const win = fakeWindow({ minimized: false });
+  const win = fakeWindow({ minimized: false, visible: false });
   assert.equal(presentWindows([win]), 1);
   assert.deepEqual(win.calls, ["show", "focus"]);
 });
@@ -44,6 +49,54 @@ test("a destroyed window is skipped", () => {
 
 test("no windows means the caller should open one", () => {
   assert.equal(presentWindows([]), 0);
+});
+
+test("Dock activation leaves the hidden connection chooser hidden", () => {
+  const dashboard = fakeWindow({ visible: true });
+  const chooser = fakeWindow({ visible: false });
+  assert.equal(presentWindows([dashboard, chooser], dashboard), 1);
+  assert.deepEqual(dashboard.calls, ["show", "focus"]);
+  assert.deepEqual(chooser.calls, []);
+});
+
+test("Dock activation restores the minimized dashboard instead of the hidden chooser", () => {
+  const chooser = fakeWindow({ visible: false });
+  const dashboard = fakeWindow({ minimized: true });
+  assert.equal(presentWindows([chooser, dashboard], dashboard), 1);
+  assert.deepEqual(dashboard.calls, ["restore", "show", "focus"]);
+  assert.deepEqual(chooser.calls, []);
+});
+
+test("Dock activation restores a dashboard hidden by close-to-tray", () => {
+  const chooser = fakeWindow({ visible: false });
+  const dashboard = fakeWindow({ visible: false });
+  assert.equal(presentWindows([chooser, dashboard], dashboard), 1);
+  assert.deepEqual(dashboard.calls, ["show", "focus"]);
+  assert.deepEqual(chooser.calls, []);
+});
+
+test("an explicitly opened connection chooser remains available", () => {
+  const chooser = fakeWindow({ visible: true });
+  const dashboard = fakeWindow({ visible: false });
+  assert.equal(presentWindows([chooser, dashboard], dashboard), 1);
+  assert.deepEqual(chooser.calls, ["show", "focus"]);
+  assert.deepEqual(dashboard.calls, []);
+});
+
+test("activation during startup does not show a pending dashboard", () => {
+  const chooser = fakeWindow({ visible: true });
+  const pending = fakeWindow({ visible: false });
+  assert.equal(presentWindows([pending, chooser]), 1);
+  assert.deepEqual(chooser.calls, ["show", "focus"]);
+  assert.deepEqual(pending.calls, []);
+});
+
+test("a destroyed preferred dashboard falls back to the remaining chooser", () => {
+  const chooser = fakeWindow({ visible: false });
+  const dashboard = fakeWindow({ destroyed: true });
+  assert.equal(presentWindows([dashboard, chooser], dashboard), 1);
+  assert.deepEqual(chooser.calls, ["show", "focus"]);
+  assert.deepEqual(dashboard.calls, []);
 });
 
 test("macOS tray close hides the window until the next Dock click", () => {
